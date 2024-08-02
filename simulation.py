@@ -26,6 +26,22 @@ class Assets:
         self.__dict__[from_asset].sell(amount)
         self.__dict__[to_asset].buy(amount * rate)
 
+class ExchangeRate:
+    def __init__(self, base_asset, target_assets):
+        self.base_asset = base_asset
+        self.target_assets = target_assets
+
+        self.rates = np.zeros(len(target_assets))
+
+    def update(self, rates):
+        self.rates = rates
+
+    def buy(self, target_asset):
+        return self.rates[self.target_assets.index(target_asset)]
+
+    def sell(self, target_asset):
+        return 1 / self.rates[self.target_assets.index(target_asset)]
+
 def main():
     base_asset = "yen"
     target_assets = ["dollar"]
@@ -33,15 +49,19 @@ def main():
     assets = Assets([base_asset] + target_assets)
     assets.get(base_asset, 10000)
 
-    print(assets.yen.possession)
-    print(assets.dollar.possession)
-
-    assets.exchange("yen", "dollar", 0.01, 5000)
+    rate = ExchangeRate(base_asset, target_assets)
+    rate.update([0.01])
 
     print(assets.yen.possession)
     print(assets.dollar.possession)
 
-    assets.exchange("dollar", "yen", 101, 50)
+    assets.exchange("yen", "dollar", rate.buy("dollar"), 5000)
+
+    print(assets.yen.possession)
+    print(assets.dollar.possession)
+
+    rate.update([0.009])
+    assets.exchange("dollar", "yen", rate.sell("dollar"), 50)
 
     print(assets.yen.possession)
     print(assets.dollar.possession)
