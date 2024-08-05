@@ -14,6 +14,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 download_dir = "tmp"
 
 option = Options()
+option.add_argument("--headless")
 option.add_experimental_option("prefs", {
     "download.default_directory": current_dir + "/" + download_dir,
 })
@@ -42,6 +43,7 @@ def fetch_each_cript(driver, crypt):
         download_btn = driver.find_element(By.XPATH, "//*[@id='__next']/div[2]/div/div[2]/div/div/div/div[2]/div/div[1]/div/button[2]/div[1]/div")
         download_btn.click()
         time.sleep(1)
+        print(f"{crypt}のデータを取得しました。")
     except Exception as e:
         print(f"{crypt}のデータ取得に失敗しました。")
 
