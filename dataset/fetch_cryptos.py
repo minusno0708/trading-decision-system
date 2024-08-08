@@ -49,8 +49,23 @@ def fetch_each_crypto(driver, crypto) -> None:
         driver.get(url(crypto))
         time.sleep(3)
 
+        try:
+            driver.find_element(By.XPATH, '//*[@id="__next"]/div[2]/div/div[2]/div/div/div/div[2]/div/div[1]/h1').click()
+            time.sleep(1)
+            driver.find_element(By.XPATH, '//*[@id="onetrust-reject-all-handler"]').click()
+            time.sleep(1)
+        except:
+            pass
+
         # 日付けを選択
         choose_date(driver, start_date, end_date)
+    
+        while True:
+            try:
+                driver.find_element(By.XPATH, '//*[@id="__next"]/div[2]/div/div[2]/div/div/div/div[2]/div/p[1]/button').click()
+                time.sleep(1)
+            except:
+                break
 
         download_btn = driver.find_element(By.XPATH, '//*[@id="__next"]/div[2]/div/div[2]/div/div/div/div[2]/div/div[1]/div/button[2]/div[1]/div')
         download_btn.click()
