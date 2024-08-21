@@ -4,6 +4,7 @@ from concat_cryptos import concat_cryptos
 import os
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
 download_tmp_dir = "tmp"
 
 def make_dl_dir(dir) -> None:
@@ -11,7 +12,9 @@ def make_dl_dir(dir) -> None:
         os.makedirs(dir)
 
 if __name__ == '__main__':
-    make_dl_dir(download_tmp_dir)
+    target_dir = parent_dir + "/" + download_tmp_dir
 
-    fetch_cryptos(current_dir + "/" + download_tmp_dir)
-    concat_cryptos(current_dir + "/" + download_tmp_dir)
+    make_dl_dir(target_dir)
+
+    fetch_cryptos(target_dir)
+    concat_cryptos(target_dir)

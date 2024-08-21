@@ -10,7 +10,7 @@ import glob
 target_cryptos = ["bitcoin", "ethereum", "tether", "bnb", "solana", "usd-coin", "xrp", "toncoin", "dogecoin", "cardano"]
 
 start_date = "20130528"
-end_date = "20180528"
+end_date = "20240808"
 
 month_dict = {
     1: "Jan",
@@ -141,3 +141,9 @@ def choose_date(driver, start_date, end_date) -> None:
     continue_btn = driver.find_element(By.XPATH, '//*[@id="tippy-1"]/div/div[1]/div/div/div[2]/span/button')
     continue_btn.click()
     time.sleep(1)
+
+if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    download_tmp_dir = "tmp"
+
+    fetch_cryptos(current_dir + "/" + download_tmp_dir)
