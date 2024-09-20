@@ -44,12 +44,17 @@ def data_loader(file_path: str) -> [pd.DataFrame, pd.DataFrame]:
     return train_data, test_data
 
 def train_model(train_data: pd.DataFrame) -> DeepAREstimator:
+    dataset = ListDataset(
+        [{"start": train_data.index[0], "target": train_data["close"]}],
+        freq="D",
+    )
+
     return DeepAREstimator(
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        trainer_kwargs={"max_epochs": 5}
-    ).train(PandasDataset(train_data, target="close"))
+        trainer_kwargs={"max_epochs": 5},
+    ).train(dataset)
     
 
 if __name__ == "__main__":
@@ -57,22 +62,7 @@ if __name__ == "__main__":
 
     draw_graph(list(train_data.index), list(train_data["close"]), "train_data")
 
-    print(train_data)
-    print(type(list(train_data.index)))
+    model = train_model(train_data)
 
-    """
+    print("success")
 
-    model = DeepAREstimator(
-        context_length=input_length,
-        prediction_length=output_length,
-        freq="D",
-        trainer_kwargs={"max_epochs": 5}
-    ).train(PandasDataset(train_data, target="close"))
-    
-    forecasts = list(model.predict(PandasDataset(test_data, target="close")))
-
-    plt.plot(test_data["close"], color="black")
-    for forecast in forecasts:
-        forecast.plot()
-    plt.legend(["True values"], loc="upper left", fontsize="xx-large")
-    """
