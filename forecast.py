@@ -3,18 +3,31 @@ import matplotlib.pyplot as plt
 
 from sklearn.preprocessing import StandardScaler
 
-from gluonts.dataset.pandas import PandasDataset
+import torch
+
 from gluonts.dataset.common import ListDataset
 from gluonts.torch import DeepAREstimator
+from gluonts.evaluation.backtest import make_evaluation_predictions
+
+torch.set_float32_matmul_precision("high")
 
 data_path = "dataset/btc.csv"
 
 input_length = 30
 output_length = 7
 
+train_flag = False
+
 def draw_graph(x_data: list, y_data: list, name: str):
     plt.plot(x_data, y_data)
     plt.savefig(f"output/{name}.png")
+
+def save_model(model: DeepAREstimator, name: str):
+    torch.save(model, f"model/{name}.pth")
+
+def load_model(name: str) -> DeepAREstimator:
+    model = torch.load(f"model/{name}.pth")
+    return model
 
 def data_loader(file_path: str) -> [pd.DataFrame, pd.DataFrame]:
     df_row = pd.read_csv(file_path)
@@ -55,6 +68,23 @@ def train_model(train_data: pd.DataFrame) -> DeepAREstimator:
         freq="D",
         trainer_kwargs={"max_epochs": 5},
     ).train(dataset)
+
+def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> [list, list]:
+    dataset = ListDataset(
+        [{"start": test_data.index[0], "target": test_data["close"]}],
+        freq="D",
+    )
+
+    forecast_it, ts_it = make_evaluation_predictions(
+        dataset=dataset,
+        predictor=model,
+        num_samples=100,
+    )
+
+    forecasts = list(forecast_it)
+    tss = list(ts_it)
+
+    return forecasts, tss
     
 
 if __name__ == "__main__":
@@ -62,7 +92,16 @@ if __name__ == "__main__":
 
     draw_graph(list(train_data.index), list(train_data["close"]), "train_data")
 
-    model = train_model(train_data)
+
+    if train_flag:
+        model = train_model(train_data)
+        save_model(model, "model")
+    else:
+        model = load_model("model")
+
+    forecasts, tss = forecast(model, test_data)
+
+    draw_graph(list(test_data.index), list(test_data["close"]), "test_data")
 
     print("success")
 
