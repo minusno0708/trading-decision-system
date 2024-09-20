@@ -29,7 +29,7 @@ def load_model(name: str) -> DeepAREstimator:
     model = torch.load(f"model/{name}.pth")
     return model
 
-def data_loader(file_path: str) -> [pd.DataFrame, pd.DataFrame]:
+def data_loader(file_path: str) -> list[pd.DataFrame, pd.DataFrame]:
     df_row = pd.read_csv(file_path)
 
     # 不要な列を削除
@@ -69,7 +69,7 @@ def train_model(train_data: pd.DataFrame) -> DeepAREstimator:
         trainer_kwargs={"max_epochs": 5},
     ).train(dataset)
 
-def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> [list, list]:
+def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> list[list, list]:
     dataset = ListDataset(
         [{"start": test_data.index[0], "target": test_data["close"]}],
         freq="D",
@@ -98,6 +98,8 @@ if __name__ == "__main__":
         save_model(model, "model")
     else:
         model = load_model("model")
+
+    print(type(model))
 
     forecasts, tss = forecast(model, test_data)
 
