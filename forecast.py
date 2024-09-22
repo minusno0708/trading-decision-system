@@ -16,7 +16,7 @@ data_path = "dataset/btc.csv"
 input_length = 30
 output_length = 7
 
-train_flag = False
+train_flag = True
 
 def draw_graph(x_data: list, y_data: list, name: str):
     plt.plot(x_data, y_data)
@@ -70,6 +70,21 @@ def train_model(train_data: pd.DataFrame) -> DeepAREstimator:
         prediction_length=output_length,
         freq="D",
         trainer_kwargs={"max_epochs": 5},
+        num_layers = 2,
+        hidden_size = 40,
+        lr = 0.001,
+        weight_decay = 1e-08,
+        dropout_rate = 0.1,
+        patience = 10,
+        num_feat_dynamic_real = 0,
+        num_feat_static_cat = 0,
+        num_feat_static_real = 0,
+        scaling = True,
+        num_parallel_samples = 100,
+        batch_size = 32,
+        num_batches_per_epoch = 50,
+
+
     ).train(dataset)
 
 def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> list[list, list]:
@@ -93,7 +108,8 @@ def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> list[list, list
 if __name__ == "__main__":
     train_data, test_data = data_loader(data_path)
 
-    draw_graph(list(train_data.index), list(train_data["close"]), "train_data")
+    #draw_graph(list(train_data.index), list(train_data["close"]), "train_data")
+    #draw_graph(list(test_data.index), list(test_data["close"]), "test_data")
 
     if train_flag:
         model = train_model(train_data)
@@ -101,11 +117,20 @@ if __name__ == "__main__":
     else:
         model = load_model("model")
 
-    print(type(model))
+    target_data = test_data.iloc[range(input_length), [0]]
+    correct_data = test_data.iloc[range(input_length - 1, input_length + output_length - 1), [0]]
 
-    forecasts, tss = forecast(model, test_data)
+    forecasts, tss = forecast(model, target_data)
 
-    draw_graph(list(test_data.index), list(test_data["close"]), "test_data")
+    print(forecasts[0].median)
+
+    # 予測結果を描画
+    plt.plot(tss[0].index.to_timestamp(), tss[0].values, label="target")
+    plt.plot(correct_data.index, correct_data.values, label="correct")
+
+    plt.plot(correct_data.index, forecasts[0].median, label="forecast")
+    plt.legend()
+    plt.savefig("output/forecast.png")
 
     print("success")
 
