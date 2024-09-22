@@ -22,6 +22,9 @@ def draw_graph(x_data: list, y_data: list, name: str):
     plt.plot(x_data, y_data)
     plt.savefig(f"output/{name}.png")
 
+    plt.clf()
+    plt.close()
+
 def save_model(model: DeepAREstimator, name: str):
     torch.save(model, f"model/{name}.pth")
 
@@ -91,7 +94,6 @@ if __name__ == "__main__":
     train_data, test_data = data_loader(data_path)
 
     draw_graph(list(train_data.index), list(train_data["close"]), "train_data")
-
 
     if train_flag:
         model = train_model(train_data)
