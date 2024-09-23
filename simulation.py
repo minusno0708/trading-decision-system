@@ -6,7 +6,7 @@ from data_provider.data_loader import DataLoader
 
 from model.DeepAR import Model
 
-trade_rate = 0.1
+trade_rate = 0.01
 
 class Log:
     def __init__(self):
@@ -60,10 +60,10 @@ class ExchangeRate:
         self.rates = rates
 
     def buy(self, target_asset):
-        return self.rates[self.target_assets.index(target_asset)]
+        return 1 / self.rates[self.target_assets.index(target_asset)]
 
     def sell(self, target_asset):
-        return 1 / self.rates[self.target_assets.index(target_asset)]
+        return self.rates[self.target_assets.index(target_asset)]
 
 
 def is_buy_signal(today_price, tomorrow_price):
@@ -115,7 +115,7 @@ def main():
 
         today_date = target_data.index[-1]
 
-        print(f"{today_date}: yen {assets.yen.possession}, btc {assets.btc.possession}")
+        print(f"{today_date}: rate {rate.rates[0]}, yen {assets.yen.possession}, btc {assets.btc.possession}")
 
         rate_log.append(today_date, rate.rates[0])
         yen_log.append(today_date, assets.yen.possession)
