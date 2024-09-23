@@ -16,7 +16,7 @@ data_path = "dataset/btc.csv"
 input_length = 30
 output_length = 7
 
-train_flag = True
+train_flag = False
 
 def draw_graph(x_data: list, y_data: list, name: str):
     plt.plot(x_data, y_data)
@@ -66,10 +66,10 @@ def train_model(train_data: pd.DataFrame) -> DeepAREstimator:
     )
 
     return DeepAREstimator(
-        context_length=input_length,
         prediction_length=output_length,
+        context_length=input_length,
         freq="D",
-        trainer_kwargs={"max_epochs": 5},
+        trainer_kwargs={"max_epochs": 10},
         num_layers = 2,
         hidden_size = 40,
         lr = 0.001,
@@ -83,26 +83,17 @@ def train_model(train_data: pd.DataFrame) -> DeepAREstimator:
         num_parallel_samples = 100,
         batch_size = 32,
         num_batches_per_epoch = 50,
-
-
     ).train(dataset)
 
-def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> list[list, list]:
+def forecast(model: DeepAREstimator, test_data: pd.DataFrame) -> list:
     dataset = ListDataset(
         [{"start": test_data.index[0], "target": test_data["close"]}],
         freq="D",
     )
 
-    forecast_it, ts_it = make_evaluation_predictions(
-        dataset=dataset,
-        predictor=model,
-        num_samples=100,
-    )
+    forecasts = list(model.predict(dataset))
 
-    forecasts = list(forecast_it)
-    tss = list(ts_it)
-
-    return forecasts, tss
+    return forecasts
     
 
 if __name__ == "__main__":
@@ -117,20 +108,20 @@ if __name__ == "__main__":
     else:
         model = load_model("model")
 
-    target_data = test_data.iloc[range(input_length), [0]]
-    correct_data = test_data.iloc[range(input_length - 1, input_length + output_length - 1), [0]]
+    i = 51
 
-    forecasts, tss = forecast(model, target_data)
+    target_data = test_data.iloc[range(i, input_length + i), [0]]
+    correct_data = test_data.iloc[range(input_length + i, input_length + output_length + i), [0]]
 
-    print(forecasts[0].median)
+    forecasts = forecast(model, target_data)
 
     # 予測結果を描画
-    plt.plot(tss[0].index.to_timestamp(), tss[0].values, label="target")
+    plt.plot(target_data.index, target_data.values, label="target")
     plt.plot(correct_data.index, correct_data.values, label="correct")
 
-    plt.plot(correct_data.index, forecasts[0].median, label="forecast")
+    forecasts[0].plot()
+
     plt.legend()
     plt.savefig("output/forecast.png")
 
     print("success")
-
