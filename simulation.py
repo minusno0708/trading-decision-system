@@ -1,5 +1,9 @@
 import numpy as np
 
+from data_provider.data_loader import DataLoader
+
+from model.DeepAR import Model
+
 class Asset:
     def __init__(self, name):
         self.name = name
@@ -44,27 +48,41 @@ class ExchangeRate:
 
 def main():
     base_asset = "yen"
-    target_assets = ["dollar"]
+    target_assets = ["btc"]
 
     assets = Assets([base_asset] + target_assets)
     assets.get(base_asset, 10000)
 
     rate = ExchangeRate(base_asset, target_assets)
+
+    input_length = 30
+    output_length = 7
+
+    data_loader = DataLoader(output_length)
+    _, test_data = data_loader.load("btc.csv")
+
+    model = Model(input_length, output_length).load("output/models/model.pth")
+
+    target_data = test_data.iloc[range(0, input_length), [0]]
+
+    print(target_data.values[-1])
+    print(data_loader.inverse_transform(target_data.values[-1]))
+
     rate.update([0.01])
 
     print(assets.yen.possession)
-    print(assets.dollar.possession)
+    print(assets.btc.possession)
 
-    assets.exchange("yen", "dollar", rate.buy("dollar"), 5000)
+    assets.exchange("yen", "btc", rate.buy("btc"), 5000)
 
     print(assets.yen.possession)
-    print(assets.dollar.possession)
+    print(assets.btc.possession)
 
     rate.update([0.009])
-    assets.exchange("dollar", "yen", rate.sell("dollar"), 50)
+    assets.exchange("btc", "yen", rate.sell("btc"), 50)
 
     print(assets.yen.possession)
-    print(assets.dollar.possession)
+    print(assets.btc.possession)
 
 if __name__ == '__main__':
     main()
