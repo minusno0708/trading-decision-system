@@ -1,11 +1,27 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from data_provider.data_loader import DataLoader
 
 from model.DeepAR import Model
 
-trade_rate = 0.01
+trade_rate = 0.1
+
+class Log:
+    def __init__(self):
+        self.index = []
+        self.values = []
+
+    def append(self, index, value):
+        self.index.append(index)
+        self.values.append(value)
+
+    def plot(self, name):
+        plt.plot(self.index, self.values)
+        plt.savefig(f"output/images/{name}.png")
+        plt.clf()
+        plt.close()
 
 class Asset:
     def __init__(self, name):
@@ -89,13 +105,26 @@ def main():
     model = Model(input_length, output_length)
     model.load("output/models/model.pth")
 
+    rate_log = Log()
+    yen_log = Log()
+    btc_log = Log()
 
     for d in range(0, len(test_data) - input_length - output_length):
         target_data = test_data.iloc[range(d, input_length + d), [0]]
         day_trade(assets, rate, model, data_loader, target_data)
 
-    print(assets.yen.possession)
-    print(assets.btc.possession)
+        today_date = target_data.index[-1]
+
+        print(f"{today_date}: yen {assets.yen.possession}, btc {assets.btc.possession}")
+
+        rate_log.append(today_date, rate.rates[0])
+        yen_log.append(today_date, assets.yen.possession)
+        btc_log.append(today_date, assets.btc.possession)
+        
+
+    rate_log.plot("rate")
+    yen_log.plot("yen")
+    btc_log.plot("btc")
 
 
 if __name__ == '__main__':
