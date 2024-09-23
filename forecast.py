@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from data_provider.data_loader import data_loader
+from data_provider.data_loader import DataLoader
 from model.DeepAR import Model
 
 input_length = 30
@@ -16,7 +16,8 @@ def draw_graph(x_data: list, y_data: list, name: str):
     plt.close()
 
 if __name__ == "__main__":
-    train_data, test_data = data_loader("btc.csv", output_length)
+    data_loader = DataLoader(output_length)
+    train_data, test_data = data_loader.load("btc.csv")
 
     draw_graph(list(train_data.index), list(train_data["close"]), "train_data")
     draw_graph(list(test_data.index), list(test_data["close"]), "test_data")

@@ -1,8 +1,11 @@
 import numpy as np
+import pandas as pd
 
 from data_provider.data_loader import DataLoader
 
 from model.DeepAR import Model
+
+trade_rate = 0.01
 
 class Asset:
     def __init__(self, name):
@@ -46,6 +49,28 @@ class ExchangeRate:
     def sell(self, target_asset):
         return 1 / self.rates[self.target_assets.index(target_asset)]
 
+
+def is_buy_signal(today_price, tomorrow_price):
+    return today_price < tomorrow_price
+
+def is_sell_signal(today_price, tomorrow_price):
+    return today_price > tomorrow_price
+
+def day_trade(assets: Assets, rate: ExchangeRate, model: Model, data_loader: DataLoader, data: pd.DataFrame):
+    rate.update(
+        data_loader.inverse_transform(data.values[-1])[0]
+    )
+
+    forecasts = model.forecast(data)
+
+    today_price = data.values[-1][0]
+    tomorrow_price = forecasts[0].mean[0]
+
+    if is_buy_signal(today_price, tomorrow_price):
+        assets.exchange("yen", "btc", rate.buy("btc"), assets.yen.possession * trade_rate)
+    elif is_sell_signal(today_price, tomorrow_price):
+        assets.exchange("btc", "yen", rate.sell("btc"), assets.btc.possession * trade_rate)
+
 def main():
     base_asset = "yen"
     target_assets = ["btc"]
@@ -61,28 +86,17 @@ def main():
     data_loader = DataLoader(output_length)
     _, test_data = data_loader.load("btc.csv")
 
-    model = Model(input_length, output_length).load("output/models/model.pth")
+    model = Model(input_length, output_length)
+    model.load("output/models/model.pth")
 
-    target_data = test_data.iloc[range(0, input_length), [0]]
 
-    print(target_data.values[-1])
-    print(data_loader.inverse_transform(target_data.values[-1]))
-
-    rate.update([0.01])
-
-    print(assets.yen.possession)
-    print(assets.btc.possession)
-
-    assets.exchange("yen", "btc", rate.buy("btc"), 5000)
+    for d in range(0, len(test_data) - input_length - output_length):
+        target_data = test_data.iloc[range(d, input_length + d), [0]]
+        day_trade(assets, rate, model, data_loader, target_data)
 
     print(assets.yen.possession)
     print(assets.btc.possession)
 
-    rate.update([0.009])
-    assets.exchange("btc", "yen", rate.sell("btc"), 50)
-
-    print(assets.yen.possession)
-    print(assets.btc.possession)
 
 if __name__ == '__main__':
     main()
