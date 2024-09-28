@@ -4,6 +4,7 @@ import numpy as np
 import os
 
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 current_dir = os.path.dirname(__file__)
 file_dir = "../dataset/"
@@ -46,14 +47,24 @@ def main():
     for crypto in cryptos:
         data = load(cryptos[crypto] + ".csv")
 
-        plt.plot(data.index, data["close"])
-        plt.xlabel("Date")
+        start_year = data.index[0].year
+        end_year = data.index[-1].year
+
+        print(f"{crypto}: {data.index[0]} - {data.index[-1]}")
+
+        year_interval = (end_year - start_year) // 10 + 1
+
+        fig, ax = plt.subplots()
+
+        ax.plot(data.index, data["close"])
+
+        ax.xaxis.set_major_locator(mdates.YearLocator(year_interval))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+
+        plt.xlabel("Year")
         plt.ylabel("Price(Yen)")
         plt.title(crypto)
         plt.savefig(current_dir + "/" + output_dir + crypto + ".png")
-
-        plt.clf()
-        plt.close()
 
 
 if __name__ == "__main__":
