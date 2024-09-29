@@ -19,7 +19,8 @@ class WriteCSV:
 
 if __name__ == "__main__":
     file_path = sys.argv[1]
-    output_path = "../btc.csv"
+    output_name = sys.argv[2]
+    output_path = f"../{output_name}.csv"
 
     result = WriteCSV(output_path)
 
