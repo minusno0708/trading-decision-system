@@ -14,7 +14,7 @@ class DataLoader:
 
         self.scaler = StandardScaler()
 
-    def load(self, file_name: str) -> list[pd.DataFrame, pd.DataFrame]:
+    def load(self, file_name: str, scaler_flag = True) -> list[pd.DataFrame, pd.DataFrame]:
         file_path = current_dir + "/" + file_dir + file_name
 
         df_row = pd.read_csv(file_path)
@@ -31,7 +31,8 @@ class DataLoader:
         df_row = df_row.set_index("timeOpen")
 
         # 値を標準化
-        df_row["close"] = self.scaler.fit_transform(df_row["close"].values.reshape(-1, 1))
+        if scaler_flag:
+            df_row["close"] = self.scaler.fit_transform(df_row["close"].values.reshape(-1, 1))
 
         # データを分割
         rate = 0.8
