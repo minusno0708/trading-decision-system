@@ -7,12 +7,17 @@ from data_provider.data_loader import DataLoader
 import torch
 from model.DeepAR import Model
 
-trade_rate = 0.1
-
 np.random.seed(0)
 torch.manual_seed(0)
 
-import random
+from strutegy import *
+
+
+input_length = 30
+output_length = 7
+
+trade_rate = 0.01
+start_yen = 100000
 
 
 class Log:
@@ -72,29 +77,14 @@ class TradeRate:
     def sell(self, target_asset):
         return self.rates[self.target_assets.index(target_asset)]
 
-def trade_signal(today_price, tomorrow_price):
-    margin = 0
-
-    price_diff = tomorrow_price - today_price
-
-    if price_diff > margin:
-        return "buy"
-    elif price_diff < -margin:
-        return "sell"
-    else:
-        return "hold"
-
 def main():
     base_asset = "yen"
     target_assets = ["btc"]
 
     assets = Assets([base_asset] + target_assets)
-    assets.get(base_asset, 10000)
+    assets.get(base_asset, start_yen)
 
     rate = TradeRate(base_asset, target_assets)
-
-    input_length = 30
-    output_length = 7
 
     data_loader = DataLoader(output_length)
     _, raw_data = data_loader.load("btc.csv", False)
@@ -112,32 +102,30 @@ def main():
         target_raw_data = raw_data.iloc[range(d, input_length + d), [0]]
         tommorow_data = raw_data.iloc[range(input_length + d, input_length + d + 1), [0]]
 
-        #day_trade(assets, rate, model, target_data, raw_target_data, tommorow_data)
-
         # 仮想通貨の価格を更新
         rate.update([
-            target_raw_data.values[0][-1]
+            target_raw_data.values[-1][0]
         ])
 
         # 明日以降の価格を予測
         forecasts = model.forecast(target_scaled_data)
 
         # 取引開始
-        today_price = data_loader.inverse_transform(target_scaled_data.values[0])[0][-1] # 予測値との比較のため、標準化した値を使用
-        tomorrow_price = data_loader.inverse_transform(forecasts[0].mean)[0][0]
+        history_values = data_loader.inverse_transform(target_scaled_data.values.reshape(-1))[0]
+        forecast_values = data_loader.inverse_transform(forecasts[0].mean)[0]
 
-        signal = trade_signal(today_price, tomorrow_price)
+        action = diff_next_mean(history_values, forecast_values)
 
-        if signal == "buy":
+        if action == "buy":
             assets.trade("yen", "btc", rate.buy("btc"), assets.yen.possession * trade_rate)
-        elif signal == "sell":
+        elif action == "sell":
             assets.trade("btc", "yen", rate.sell("btc"), assets.btc.possession * trade_rate)
         else:
             pass
 
         # 結果を出力
         current_date = target_raw_data.index[-1]
-        print(f"date: {current_date}, action: {signal}, result: yen {assets.yen.possession}, btc {assets.btc.possession}")
+        print(f"date: {current_date}, action: {action}, result: yen {assets.yen.possession}, btc {assets.btc.possession}")
 
         # ログを保存
         rate_log.append(current_date, rate.rates[0])
