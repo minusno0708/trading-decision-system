@@ -14,14 +14,14 @@ output_dir = "../output/raw_data/"
 cryptos = {
     "BitCoin": "btc",
     "Ethereum": "eth",
-    "Tether": "tet",
+    "Tether": "usdt",
     "Binance Coin": "bnb",
     "Solana": "sol",
     "USD Coin": "usdc",
     "XRP": "xrp",
     "TONCoin": "ton",
     "Dogecoin": "doge",
-    "Cardano": "car"
+    "Cardano": "ada",
 }
 
 
