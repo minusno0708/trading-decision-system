@@ -5,6 +5,10 @@ import torch
 from gluonts.dataset.common import ListDataset
 from gluonts.torch import DeepAREstimator
 from gluonts.evaluation.backtest import make_evaluation_predictions
+from gluonts.model.predictor import Predictor
+
+from pathlib import Path
+import os
 
 torch.set_float32_matmul_precision("high")
 
@@ -51,8 +55,14 @@ class Model:
 
         return forecasts
 
-    def save(self, path: str):
-        torch.save(self.model, path)
+    def save(self, str_path: str):
+        path = Path(str_path)
 
-    def load(self, path: str):
-        self.model = torch.load(path)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        self.model.serialize(path)
+
+    def load(self, str_path: str):
+        path = Path(str_path)
+        self.model = Predictor.deserialize(path)
