@@ -18,24 +18,24 @@ class Model:
         self.output_length = output_length
 
         self.model = DeepAREstimator(
-        prediction_length=output_length,
-        context_length=input_length,
-        freq="D",
-        trainer_kwargs={"max_epochs": 10},
-        num_layers = 2,
-        hidden_size = 40,
-        lr = 0.001,
-        weight_decay = 1e-08,
-        dropout_rate = 0.1,
-        patience = 10,
-        num_feat_dynamic_real = 0,
-        num_feat_static_cat = 0,
-        num_feat_static_real = 0,
-        scaling = True,
-        num_parallel_samples = 100,
-        batch_size = 32,
-        num_batches_per_epoch = 50,
-    )
+            prediction_length=output_length,
+            context_length=input_length,
+            freq="D",
+            trainer_kwargs={"max_epochs": 10},
+            num_layers = 2,
+            hidden_size = 40,
+            lr = 0.001,
+            weight_decay = 1e-08,
+            dropout_rate = 0.1,
+            patience = 10,
+            num_feat_dynamic_real = 0,
+            num_feat_static_cat = 0,
+            num_feat_static_real = 0,
+            scaling = True,
+            num_parallel_samples = 100,
+            batch_size = 32,
+            num_batches_per_epoch = 50,
+        )
 
     def train(self, train_data: pd.DataFrame):
         dataset = ListDataset(
