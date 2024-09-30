@@ -1,7 +1,7 @@
 import random
 
-def random() -> str:
-    return random.choice(["buy", "sell", "hold"])
+def random_decision() -> str:
+    return random.choice(["buy", "sell"])
 
 def diff_next_mean(history_values: list, forecast_values: list, threshold_value = 0) -> str:
     current_price = history_values[-1]
@@ -17,10 +17,10 @@ def diff_next_mean(history_values: list, forecast_values: list, threshold_value 
         return "hold"
 
 def diff_all_mean(history_values: list, forecast_values: list, threshold_value = 0) -> str:
-    history_mean = sum(history_values) / len(history_values)
+    current_price = history_values[-1]
     forecast_mean = sum(forecast_values) / len(forecast_values)
 
-    price_diff = forecast_mean - history_mean
+    price_diff = forecast_mean - current_price
 
     if price_diff > threshold_value:
         return "buy"
@@ -28,3 +28,19 @@ def diff_all_mean(history_values: list, forecast_values: list, threshold_value =
         return "sell"
     else:
         return "hold"
+
+def all_win(history_values: list, next_price: float) -> str:
+    current_price = history_values[-1]
+
+    if current_price < next_price:
+        return "buy"
+    else:
+        return "sell"
+
+def all_lose(history_values: list, next_price: float) -> str:
+    current_price = history_values[-1]
+
+    if current_price > next_price:
+        return "buy"
+    else:
+        return "sell"

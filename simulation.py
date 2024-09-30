@@ -3,12 +3,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from data_provider.data_loader import DataLoader
+import matplotlib.dates as mdates
 
 import torch
 from model.DeepAR import Model
 
-np.random.seed(0)
-torch.manual_seed(0)
 
 from strutegy import *
 
@@ -16,8 +15,16 @@ from strutegy import *
 input_length = 30
 output_length = 7
 
-trade_rate = 0.01
+trade_rate = 0.1
 start_yen = 100000
+
+seed = 0
+
+random.seed(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
+
+train_flag = True
 
 
 class Log:
@@ -29,8 +36,15 @@ class Log:
         self.index.append(index)
         self.values.append(value)
 
-    def plot(self, name):
-        plt.plot(self.index, self.values)
+    def plot(self, name, title = None):
+        fig, ax = plt.subplots()
+        ax.plot(self.index, self.values)
+
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=4))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+
+        if title:
+            plt.title(title)
         plt.savefig(f"output/images/{name}.png")
         plt.clf()
         plt.close()
@@ -88,14 +102,17 @@ def main():
 
     data_loader = DataLoader(output_length)
     _, raw_data = data_loader.load("btc.csv", False)
-    _, test_data = data_loader.load("btc.csv")
+    train_data, test_data = data_loader.load(f"{target_assets[0]}.csv")
 
     model = Model(input_length, output_length)
-    model.load("output/models/btc_model")
+    if train_flag:
+        model.train(train_data)
+    else:
+        model.load(f"output/models/{target_assets[0]}_model")
 
     rate_log = Log()
     yen_log = Log()
-    btc_log = Log()
+    crypto_log = Log()
 
     for d in range(0, len(raw_data) - input_length - output_length):
         target_scaled_data = test_data.iloc[range(d, input_length + d), [0]]
@@ -114,7 +131,9 @@ def main():
         history_values = data_loader.inverse_transform(target_scaled_data.values.reshape(-1))[0]
         forecast_values = data_loader.inverse_transform(forecasts[0].mean)[0]
 
-        action = diff_next_mean(history_values, forecast_values)
+        #action = diff_next_mean(history_values, forecast_values)
+        action = random_decision()
+        #action = all_lose(history_values, tommorow_data.values[0][0])
 
         if action == "buy":
             assets.trade("yen", "btc", rate.buy("btc"), assets.yen.possession * trade_rate)
@@ -123,26 +142,26 @@ def main():
         else:
             pass
 
+        #print(f"action: {action}, current: {history_values[-1]}, forecast: {forecast_values[0]}")
+
         # 結果を出力
         current_date = target_raw_data.index[-1]
-        print(f"date: {current_date}, action: {action}, result: yen {assets.yen.possession}, btc {assets.btc.possession}")
+        #print(f"date: {current_date}, action: {action}, result: yen {assets.yen.possession}, btc {assets.btc.possession}")
 
         # ログを保存
         rate_log.append(current_date, rate.rates[0])
         yen_log.append(current_date, assets.yen.possession)
-        btc_log.append(current_date, assets.btc.possession)
+        crypto_log.append(current_date, assets.btc.possession)
         
 
-    rate_log.plot("rate")
-    yen_log.plot("yen")
-    btc_log.plot("btc")
+    rate_log.plot(f"{target_assets[0]}-rate", "BTC/JPY Rate")
+    yen_log.plot(f"{target_assets[0]}-yen", "Yen Possession")
+    crypto_log.plot(f"{target_assets[0]}-{target_assets[0]}", "BTC Possession")
 
-    assets.trade("btc", "yen", rate.sell("btc"), assets.btc.possession)
+    assets.trade(f"{target_assets[0]}", "yen", rate.sell(f"{target_assets[0]}"), assets.btc.possession)
 
-    print(f"result: yen {assets.yen.possession}, btc {assets.btc.possession}")
-
+    print(f"result: yen {assets.yen.possession}, {target_assets[0]} {assets.btc.possession}")
 
 if __name__ == '__main__':
     main()
-
     
