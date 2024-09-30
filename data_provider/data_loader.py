@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 import os
+import datetime
 
 current_dir = os.path.dirname(__file__)
 file_dir = "../dataset/"
@@ -35,11 +36,10 @@ class DataLoader:
             df_row["close"] = self.scaler.fit_transform(df_row["close"].values.reshape(-1, 1))
 
         # データを分割
-        rate = 0.8
-        n_train = int(len(df_row) * rate)
-
-        train_data = df_row.iloc[:n_train + self.prediction_length]
-        test_data = df_row.iloc[n_train:]
+        # 2023年1月1日から予測を開始するように設定
+        split_date = datetime.datetime(2023, 1, 1)
+        train_data = df_row[df_row.index < split_date]
+        test_data = df_row[df_row.index >= split_date - datetime.timedelta(days=31)]
 
         return train_data, test_data 
 
