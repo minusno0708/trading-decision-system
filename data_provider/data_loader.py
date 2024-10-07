@@ -31,6 +31,9 @@ class DataLoader:
         df_row = df_row.sort_values("timeOpen")
         df_row = df_row.set_index("timeOpen")
 
+        # 指定した期間のデータを除去
+        df_row = df_row[df_row.index >= datetime.datetime(2020, 1, 1)]
+
         # 値を標準化
         if scaler_flag:
             df_row["close"] = self.scaler.fit_transform(df_row["close"].values.reshape(-1, 1))
@@ -39,7 +42,7 @@ class DataLoader:
         # 2023年1月1日から予測を開始するように設定
         split_date = datetime.datetime(2023, 1, 1)
         train_data = df_row[df_row.index < split_date]
-        test_data = df_row[df_row.index >= split_date - datetime.timedelta(days=31)]
+        test_data = df_row[df_row.index >= split_date - datetime.timedelta(days=29)]
 
         return train_data, test_data 
 
