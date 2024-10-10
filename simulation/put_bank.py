@@ -20,9 +20,9 @@ random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 
-decision_method = "diff_next_mean"
+decision_method = "random"
 
-train_flag = True
+train_flag = False
 
 output_dir = "output"
 
@@ -95,8 +95,8 @@ def main():
     target_assets = ["btc"]
 
     bank = Bank()
-    dollor_hold = 0
     btc_hold = 0
+    btc_shorted = 0
 
     log = Log()
 
@@ -142,32 +142,34 @@ def main():
             action = "buy"
         elif decision_method == "all_sell":
             action = "sell"
-        elif decision_method == "cross_action":
-            if not "action" in locals():
-                action = "sell"
-            elif action == "buy":
-                action = "sell"
-            elif action == "sell":
-                action = "buy"
+        else:
+            print("method not found")
+            return
 
         current_date = target_raw_data.index[-1]
 
-        dollor_hold = 0
+        # 保持しているビットコインを売却
+        bank.put(btc_hold * rate.sell("btc"))
         btc_hold = 0
-        bank.put(dollor_hold)
-        bank.put(btc_hold * rate.buy("btc"))
+        # 空売りしたビットコイン分のドルを返却
+        bank.out(btc_shorted * rate.sell("btc"))
+        btc_shorted = 0
 
         log.append(current_date, bank.account)
 
+        # 取引
         if action == "buy":
+            # 100ドル分のビットコインを購入
+            bank.out(dollor_sell_amount)
             btc_hold = dollor_sell_amount * rate.buy("btc")
-            bank.out(btc_hold)
         elif action == "sell":
-            dollor_hold = btc_sell_amount * rate.sell("btc")
-            bank.out(dollor_hold)
+            # 0.1BTCを空売り
+            bank.put(btc_sell_amount * rate.sell("btc"))
+            btc_shorted = btc_sell_amount
         else:
             pass
 
+        # 行動とその結果を記録
         if action == "buy":
             if history_values[-1] < tommorow_data.values[0][0]:
                 actions_result["buy_win"] += 1
@@ -183,8 +185,7 @@ def main():
             else:
                 print("Error")
 
-    bank.put(dollor_hold)
-    bank.put(btc_hold * rate.buy("btc"))
+    bank.put(btc_hold * rate.sell("btc"))
     log.append(current_date, bank.account)
 
     log.plot("bank", "bank")
