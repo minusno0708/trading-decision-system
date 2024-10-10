@@ -20,20 +20,17 @@ random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 
-decision_method = "random"
+decision_method = "diff_next_mean"
 
-train_flag = False
+train_flag = True
 
 output_dir = "output"
 
 input_length = 30
-output_length = 1
-
-trade_rate = 0.1
-start_dollar = 1000
+output_length = 7
 
 dollor_sell_amount = 100
-btc_sell_amount = 0.01
+btc_sell_amount = 0
 
 class Log:
     def __init__(self):
@@ -163,7 +160,8 @@ def main():
             bank.out(dollor_sell_amount)
             btc_hold = dollor_sell_amount * rate.buy("btc")
         elif action == "sell":
-            # 0.1BTCを空売り
+            # 100ドル分のBTCを空売り
+            btc_sell_amount = dollor_sell_amount * rate.buy("btc")
             bank.put(btc_sell_amount * rate.sell("btc"))
             btc_shorted = btc_sell_amount
         else:
