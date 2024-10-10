@@ -186,6 +186,7 @@ def main():
                 print("Error")
 
     bank.put(btc_hold * rate.sell("btc"))
+    bank.out(btc_shorted * rate.sell("btc"))
     log.append(current_date, bank.account)
 
     log.plot("bank", "bank")
