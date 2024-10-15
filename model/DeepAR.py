@@ -19,9 +19,9 @@ class Model:
 
         self.model = DeepAREstimator(
             prediction_length=output_length,
-            context_length=input_length,
+            #context_length=input_length,
             freq="D",
-            trainer_kwargs={"max_epochs": 10},
+            trainer_kwargs={"max_epochs": 50},
             num_layers = 2,
             hidden_size = 40,
             lr = 0.001,
@@ -32,7 +32,7 @@ class Model:
             num_feat_static_cat = 0,
             num_feat_static_real = 0,
             scaling = True,
-            num_parallel_samples = 100,
+            num_parallel_samples = 1000,
             batch_size = 32,
             num_batches_per_epoch = 50,
         )
