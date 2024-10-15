@@ -53,7 +53,7 @@ class DataLoader:
 
         # データを分割
         train_data = df_row[df_row.index < test_start_date]
-        test_data = df_row[df_row.index >= test_start_date - datetime.timedelta(days=self.prediction_length - 1)]
+        test_data = df_row[df_row.index >= test_start_date - datetime.timedelta(days=self.prediction_length)]
 
         return train_data, test_data 
 
