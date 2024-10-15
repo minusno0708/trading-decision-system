@@ -15,7 +15,14 @@ class DataLoader:
 
         self.scaler = StandardScaler()
 
-    def load(self, file_name: str, scaler_flag = True) -> list[pd.DataFrame, pd.DataFrame]:
+    def load(self, 
+            file_name: str,
+            scaler_flag = True,
+            train_start_date: datetime.datetime = None,
+            test_start_date: datetime.datetime = None
+            ) -> list[pd.DataFrame, pd.DataFrame]:
+        
+
         file_path = current_dir + "/" + file_dir + file_name
 
         df_row = pd.read_csv(file_path)
@@ -31,18 +38,22 @@ class DataLoader:
         df_row = df_row.sort_values("timeOpen")
         df_row = df_row.set_index("timeOpen")
 
-        # 指定した期間のデータを除去
-        df_row = df_row[df_row.index >= datetime.datetime(2020, 1, 1)]
+        # 学習データとテストデータの開始日を設定
+        if train_start_date is not None:
+            train_start_date = df_row.index[0]
+        if test_start_date is not None:
+            test_start_date = datetime.datetime(2023, 1, 1)
+
+        # データの範囲を選択
+        df_row = df_row[df_row.index >= train_start_date]
 
         # 値を標準化
         if scaler_flag:
             df_row["close"] = self.scaler.fit_transform(df_row["close"].values.reshape(-1, 1))
 
         # データを分割
-        # 2023年1月1日から予測を開始するように設定
-        split_date = datetime.datetime(2023, 1, 1)
-        train_data = df_row[df_row.index < split_date]
-        test_data = df_row[df_row.index >= split_date - datetime.timedelta(days=29)]
+        train_data = df_row[df_row.index < test_start_date]
+        test_data = df_row[df_row.index >= test_start_date - datetime.timedelta(days=self.prediction_length - 1)]
 
         return train_data, test_data 
 
