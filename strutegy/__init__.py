@@ -29,7 +29,7 @@ def diff_all_mean(history_values: list, forecast_values: list, threshold_value =
     else:
         return "hold"
 
-def all_win(history_values: list, next_price: float) -> str:
+def all_true(history_values: list, next_price: float) -> str:
     current_price = history_values[-1]
 
     if current_price < next_price:
@@ -37,7 +37,7 @@ def all_win(history_values: list, next_price: float) -> str:
     else:
         return "sell"
 
-def all_lose(history_values: list, next_price: float) -> str:
+def all_false(history_values: list, next_price: float) -> str:
     current_price = history_values[-1]
 
     if current_price > next_price:
