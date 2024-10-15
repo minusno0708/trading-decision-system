@@ -1,3 +1,5 @@
+# データ描画用のスクリプト
+
 import pandas as pd
 import numpy as np
 
@@ -41,28 +43,35 @@ def load(file_name: str) -> list[pd.DataFrame, pd.DataFrame]:
     df_row = df_row.sort_values("timeOpen")
     df_row = df_row.set_index("timeOpen")
 
-    return df_row
+    train = df_row[df_row.index < "2023-01-01"]
+    test = df_row[df_row.index >= "2023-01-01"]
+    #df_row = df_row[df_row.index >= "2023-01-01"]
+
+    return train, test
 
 def main():
     for crypto in cryptos:
-        data = load(cryptos[crypto] + ".csv")
+        train_data, test_data = load(cryptos[crypto] + ".csv")
 
-        start_year = data.index[0].year
-        end_year = data.index[-1].year
+        start_year = train_data.index[0].year
+        end_year = test_data.index[-1].year
 
-        print(f"{crypto}: {data.index[0]} - {data.index[-1]}")
+        #print(f"{crypto}: {data.index[0]} - {data.index[-1]}")
 
         year_interval = (end_year - start_year) // 10 + 1
 
         fig, ax = plt.subplots()
 
-        ax.plot(data.index, data["close"])
+        ax.plot(train_data.index, train_data["close"], label="train")
+        ax.plot(test_data.index, test_data["close"], label="test")
 
         ax.xaxis.set_major_locator(mdates.YearLocator(year_interval))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
 
+        plt.legend()
+
         plt.xlabel("Year")
-        plt.ylabel("Price(Yen)")
+        plt.ylabel("Price(Dollar)")
         plt.title(crypto)
         plt.savefig(current_dir + "/" + output_dir + crypto + ".png")
 
