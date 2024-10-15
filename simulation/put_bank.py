@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 import matplotlib.dates as mdates
+import japanize_matplotlib
 
 import torch
 
@@ -31,6 +31,8 @@ output_length = 7
 
 dollor_sell_amount = 100
 btc_sell_amount = 0
+
+atempt_name = decision_method + "-" + str(seed)
 
 class Log:
     def __init__(self):
@@ -82,10 +84,10 @@ class TradeRate:
 
 def main():
     actions_result = {
-        "buy_win": 0,
-        "buy_lose": 0,
-        "sell_win": 0,
-        "sell_lose": 0,
+        "buy_true": 0,
+        "buy_false": 0,
+        "sell_true": 0,
+        "sell_false": 0,
     }
 
     base_asset = "dollar"
@@ -131,10 +133,10 @@ def main():
             action = diff_next_mean(history_values, forecast_values)
         elif decision_method == "random":
             action = random_decision()
-        elif decision_method == "all_win":
-            action = all_win(history_values, tommorow_data.values[0][0])
-        elif decision_method == "all_lose":
-            action = all_lose(history_values, tommorow_data.values[0][0])
+        elif decision_method == "all_true":
+            action = all_true(history_values, tommorow_data.values[0][0])
+        elif decision_method == "all_false":
+            action = all_false(history_values, tommorow_data.values[0][0])
         elif decision_method == "all_buy":
             action = "buy"
         elif decision_method == "all_sell":
@@ -170,16 +172,16 @@ def main():
         # 行動とその結果を記録
         if action == "buy":
             if history_values[-1] < tommorow_data.values[0][0]:
-                actions_result["buy_win"] += 1
+                actions_result["buy_true"] += 1
             elif history_values[-1] > tommorow_data.values[0][0]:
-                actions_result["buy_lose"] += 1
+                actions_result["buy_false"] += 1
             else:
                 print("Error")
         elif action == "sell":
             if history_values[-1] > tommorow_data.values[0][0]:
-                actions_result["sell_win"] += 1
+                actions_result["sell_true"] += 1
             elif history_values[-1] < tommorow_data.values[0][0]:
-                actions_result["sell_lose"] += 1
+                actions_result["sell_false"] += 1
             else:
                 print("Error")
 
@@ -187,11 +189,21 @@ def main():
     bank.out(btc_shorted * rate.sell("btc"))
     log.append(current_date, bank.account)
 
-    log.plot("bank", "bank")
+    log.plot("bank-" + atempt_name, "損益額($)")
+    with open(f"{output_dir}/bank.txt", "a") as f:
+        f.write(f"action: {action}, seed: {seed}\n")
+        f.write("bank: " + str(bank.account) + "\n")
+        f.write("actions_result: " + str(actions_result) + "\n")
+    print(f"action: {action}, seed: {seed}")
     print("bank: ", bank.account)
     print("actions_result: ", actions_result)
 
 if __name__ == '__main__':
     print("desicion method: ", decision_method)
-    main()
+    for i in range(5):
+        seed = i
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        main()
     
