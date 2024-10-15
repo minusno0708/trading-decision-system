@@ -8,10 +8,12 @@ import numpy as np
 import pandas as pd
 import torch
 
+import datetime
+
 input_length = 30
 output_length = 7
 
-train_flag = False
+train_flag = True
 
 seed = 0
 
@@ -53,10 +55,13 @@ if __name__ == "__main__":
     crypto = "btc"
 
     data_loader = DataLoader(output_length)
-    train_data, test_data = data_loader.load(f"{crypto}.csv")
+    train_data, test_data = data_loader.load(f"{crypto}.csv", True, datetime.datetime(2021, 1, 1), datetime.datetime(2023, 1, 1))
 
     mean_loss = np.array([])
     median_loss = np.array([])
+
+    mean_correct = np.array([])
+    median_correct = np.array([])
 
     updown_trend = np.array([0, 0])
 
@@ -86,8 +91,24 @@ if __name__ == "__main__":
         else:
             updown_trend[1] += 1
 
-    print(f"Mean: {mean_loss.mean()}")
-    print(f"Median: {median_loss.mean()}")
+        correct_flag = target_data.values[-1] < correct_data.values.flatten()[0]
+        mean_flag = target_data.values[-1] < forecasts[0].mean[0]
+        median_flag = target_data.values[-1] < forecasts[0].median[0]
+
+        if correct_flag == mean_flag:
+            mean_correct = np.append(mean_correct, 1)
+        else:
+            mean_correct = np.append(mean_correct, 0)
+
+        if correct_flag == median_flag:
+            median_correct = np.append(median_correct, 1)
+        else:
+            median_correct = np.append(median_correct, 0)
+        
     print(f"UpDown: {updown_trend}")
+    print(f"MeanLoss: {mean_loss.mean()}")
+    print(f"MeanCorrect: {mean_correct.mean()}")
+    print(f"MedianLoss: {median_loss.mean()}")
+    print(f"MedianCorrect: {median_correct.mean()}")
 
     print("success")
