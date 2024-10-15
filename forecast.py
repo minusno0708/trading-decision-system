@@ -2,16 +2,18 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from data_provider.data_loader import DataLoader
-from model.DeepAR import Model
+#from model.DeepAR import TorchModel as Model
+from model.DeepAR import MxModel as Model
 
 import numpy as np
 import pandas as pd
 import torch
+import mxnet as mx
 
 import datetime
 
 input_length = 30
-output_length = 7
+output_length = 30
 
 train_flag = True
 
@@ -19,6 +21,7 @@ seed = 0
 
 np.random.seed(seed)
 torch.manual_seed(seed)
+mx.random.seed(seed)
 
 def draw_graph(x_data: list, y_data: list, name: str):
     plt.plot(x_data, y_data)
@@ -55,7 +58,7 @@ if __name__ == "__main__":
     crypto = "btc"
 
     data_loader = DataLoader(output_length)
-    train_data, test_data = data_loader.load(f"{crypto}.csv", True, datetime.datetime(2021, 1, 1), datetime.datetime(2023, 1, 1))
+    train_data, test_data = data_loader.load(f"{crypto}.csv", True, datetime.datetime(2018, 1, 1), datetime.datetime(2023, 1, 1))
 
     mean_loss = np.array([])
     median_loss = np.array([])
