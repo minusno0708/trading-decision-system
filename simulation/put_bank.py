@@ -5,13 +5,16 @@ import matplotlib.dates as mdates
 import japanize_matplotlib
 
 import torch
+import mxnet as mx
+
+import datetime
 
 import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from data_provider.data_loader import DataLoader
-from model.DeepAR import Model
+from model.DeepAR import MxModel as Model
 from strutegy import *
 
 seed = 0
@@ -19,15 +22,16 @@ seed = 0
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
+mx.random.seed(seed)
 
 decision_method = "diff_next_mean"
 
-train_flag = True
+train_flag = False
 
 output_dir = "output"
 
 input_length = 30
-output_length = 7
+output_length = 30
 
 dollor_sell_amount = 100
 btc_sell_amount = 0
@@ -102,8 +106,8 @@ def main():
     rate = TradeRate(base_asset, target_assets)
 
     data_loader = DataLoader(output_length)
-    _, raw_data = data_loader.load("btc.csv", False)
-    train_data, test_data = data_loader.load(f"{target_assets[0]}.csv")
+    _, raw_data = data_loader.load("btc.csv", False, datetime.datetime(2010, 1, 1), datetime.datetime(2023, 1, 1))
+    train_data, test_data = data_loader.load(f"{target_assets[0]}.csv", True, datetime.datetime(2010, 1, 1), datetime.datetime(2023, 1, 1))
 
     model = Model(input_length, output_length)
     if train_flag:
@@ -200,10 +204,5 @@ def main():
 
 if __name__ == '__main__':
     print("desicion method: ", decision_method)
-    for i in range(5):
-        seed = i
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        main()
+    main()
     
