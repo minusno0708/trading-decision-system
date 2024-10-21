@@ -6,6 +6,8 @@ import datetime
 import pandas as pd
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 current_dir = os.path.dirname(__file__)
 file_dir = "../dataset/"
 
@@ -34,6 +36,8 @@ def main():
     data = load("btc.csv")
     first_year = data.index[0].year
     last_year = data.index[-1].year
+
+    up_rate_list = np.array([])
 
     for year in range(first_year, last_year + 1):
         data_year = choose_year(data, year)
@@ -95,12 +99,20 @@ def main():
                     updown["down100-1000"] += 1
                 else:
                     updown["down1000-"] += 1
-        print(f"{year}: {len(data_year)}")
         up_rate = updown["up"] / (updown["up"] + updown["down"])
         down_rate = updown["down"] / (updown["up"] + updown["down"])
-        print(f"up: {up_rate}")
-        print(f"down: {down_rate}")
-        
+        print(f"{year}: {len(data_year)}, up: {updown['up']}, down: {updown['down']}")
+        up_rate_list = np.append(up_rate_list, [[year, up_rate]])
+
+    up_rate_list = up_rate_list.reshape(-1, 2)
+    print(up_rate_list[:, 1])
+    fig, ax = plt.subplots()
+    ax.plot(up_rate_list[:, 0], 0.5 * np.ones(len(up_rate_list)), linestyle="--")
+    ax.plot(up_rate_list[:, 0], up_rate_list[:, 1])
+    ax.set_title("Up Rate")
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Rate")
+    plt.savefig("up_rate.png")
 
 if __name__ == "__main__":
     main()
