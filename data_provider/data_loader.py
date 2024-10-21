@@ -39,13 +39,14 @@ class DataLoader:
         df_row = df_row.set_index("timeOpen")
 
         # 学習データとテストデータの開始日を設定
-        if train_start_date is not None:
+        if train_start_date is None:
             train_start_date = df_row.index[0]
-        if test_start_date is not None:
+        if test_start_date is None:
             test_start_date = datetime.datetime(2023, 1, 1)
 
         # データの範囲を選択
         df_row = df_row[df_row.index >= train_start_date]
+        #df_row = df_row[df_row.index < datetime.datetime(test_start_date.year + 1, 1, 1)]
 
         # 値を標準化
         if scaler_flag:
