@@ -21,11 +21,11 @@ class TorchModel:
 
         self.model = TorchDeepAREstimator(
             prediction_length=output_length,
-            #context_length=input_length,
+            context_length=input_length,
             freq="D",
-            trainer_kwargs={"max_epochs": 50},
-            num_layers = 2,
-            hidden_size = 40,
+            trainer_kwargs={"max_epochs": 100},
+            num_layers = 3,
+            hidden_size = 80,
             lr = 0.001,
             weight_decay = 1e-08,
             dropout_rate = 0.1,
@@ -42,7 +42,7 @@ class TorchModel:
     def train(self, train_data: pd.DataFrame):
         dataset = ListDataset(
             [{"start": train_data.index[0], "target": train_data["close"]}],
-            freq="D",
+            freq="1D",
         )
 
         self.model = self.model.train(dataset)
@@ -50,7 +50,7 @@ class TorchModel:
     def forecast(self, test_data: pd.DataFrame):
         dataset = ListDataset(
             [{"start": test_data.index[0], "target": test_data["close"]}],
-            freq="D",
+            freq="1D",
         )
 
         forecasts = list(self.model.predict(dataset))
