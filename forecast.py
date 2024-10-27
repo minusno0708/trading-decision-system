@@ -17,7 +17,7 @@ import statistics
 input_length = 30
 output_length = 30
 
-train_flag = False
+train_flag = True
 
 seed = 0
 
@@ -60,7 +60,7 @@ def likelihood(y_true, y_pred_prob):
     ave = statistics.mean(y_pred_prob)
     var = statistics.pvariance(y_pred_prob)
 
-    return pow(2 * math.pi * math.pow(var, 2), -1/2) * math.exp(-math.pow((y_true - ave), 2) / (2 * pow(var, 2)))
+    return pow(2 * math.pi * var, -1/2) * math.exp(-math.pow((y_true - ave), 2) / (2 * var))
 
 
 def log_likelihood(y_true, y_pred_prob):
@@ -89,10 +89,25 @@ def main(train_start_year: int = 2010, test_start_year: int = 2023):
     model = Model(input_length, output_length)
 
     if train_flag:
-        model.train(train_data)
+        train_log = model.train(train_data)
         model.save(f"output/models/{crypto}_model")
     else:
         model.load(f"output/models/{crypto}_model")
+
+    print(train_log)
+
+    if False:
+        for i in range(0, len(train_data) - input_length - output_length):
+            target_data = train_data.iloc[range(i, input_length + i), [0]]
+            correct_data = train_data.iloc[range(i + input_length, input_length + i + output_length), [0]]
+
+            forecasts = model.forecast(target_data)
+
+            loss = np.append(loss, log_likelihood(correct_data.values.flatten(), forecasts[0].samples))
+            
+        print(f"Train Data Loss: {loss.mean()}\n")
+
+        loss = np.array([])
 
     for i in range(0, len(test_data) - input_length - output_length):
 
@@ -131,7 +146,7 @@ def main(train_start_year: int = 2010, test_start_year: int = 2023):
 
         f.write("\n\n")
     """
-    print(f"loss: {loss.mean()}\n")
+    print(f"Validation Loss: {loss.mean()}\n")
     print(f"MeanPriceDiff: {mean_price_diff.mean(axis=0)}\n")
     print(f"MeanCorrect: {mean_correct.mean()}\n")
     print(f"CorrectUp Rate: {correct_updown.mean()}\n")
