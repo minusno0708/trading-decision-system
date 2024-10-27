@@ -11,11 +11,13 @@ import torch
 import mxnet as mx
 
 import datetime
+import math
+import statistics
 
 input_length = 30
-output_length = 7
+output_length = 30
 
-train_flag = True
+train_flag = False
 
 seed = 0
 
@@ -37,7 +39,7 @@ def draw_predict_graph(input_data: pd.DataFrame, forecasts: list, correct_data: 
     ax.plot(correct_data.index, correct_data.values, label="correct")
     
 
-    forecasts[0].plot(intervals=(0.3, 0.5))
+    forecasts[0].plot(intervals=(0.3, 0.8))
     ax.plot(forecasts[0].index, forecasts[0].median, label="forecast-median")
     ax.plot(forecasts[0].index, forecasts[0].mean, label="forecast-mean")
 
@@ -54,13 +56,31 @@ def rmse(y_true, y_pred):
 def mae(y_true, y_pred):
     return np.mean(np.abs(y_true - y_pred))
 
+def likelihood(y_true, y_pred_prob):
+    ave = statistics.mean(y_pred_prob)
+    var = statistics.pvariance(y_pred_prob)
+
+    return pow(2 * math.pi * math.pow(var, 2), -1/2) * math.exp(-math.pow((y_true - ave), 2) / (2 * pow(var, 2)))
+
+
+def log_likelihood(y_true, y_pred_prob):
+    loss_sum = []
+    for i in range(len(y_true)):
+        lh = likelihood(y_true[i], y_pred_prob[:, i])
+        if lh == 0:
+            lh = 1e-10
+        loss_sum.append(math.log(lh))
+
+    return np.mean(loss_sum)
+
 def main(train_start_year: int = 2010, test_start_year: int = 2023):
     crypto = "btc"
 
     data_loader = DataLoader(input_length)
     train_data, test_data = data_loader.load(f"{crypto}.csv", True, datetime.datetime(train_start_year, 1, 1), datetime.datetime(test_start_year, 1, 1))
 
-    mean_loss = np.empty((0, output_length))
+    loss = np.array([])
+    mean_price_diff = np.empty((0, output_length))
     mean_correct = np.array([])
 
     forecast_updown = np.array([])
@@ -80,13 +100,17 @@ def main(train_start_year: int = 2010, test_start_year: int = 2023):
         correct_data = test_data.iloc[range(i + input_length, input_length + i + output_length), [0]]
 
         forecasts = model.forecast(target_data)
-        if i % 100 == 0:
+
+        loss = np.append(loss, log_likelihood(correct_data.values.flatten(), forecasts[0].samples))
+        
+        if i % 50 == 0:
+            print(f"Forecasting: {i}")
             draw_predict_graph(target_data, forecasts, correct_data, crypto, i)
 
         correct_inverse = data_loader.inverse_transform(correct_data.values.flatten())[0]
         mean_inverse = data_loader.inverse_transform(forecasts[0].mean)[0]
 
-        mean_loss = np.append(mean_loss, [rmse(correct_inverse, mean_inverse)], axis=0)
+        mean_price_diff = np.append(mean_price_diff, [rmse(correct_inverse, mean_inverse)], axis=0)
 
         correct_flag = target_data.values[-1] < correct_data.values.flatten()[0]
         mean_flag = target_data.values[-1] < forecasts[0].mean[0]
@@ -100,14 +124,15 @@ def main(train_start_year: int = 2010, test_start_year: int = 2023):
     with open("test.txt", "a") as f:
         f.write(f"Train: {train_start_year}, Test: {test_start_year}\n")
         
-        f.write(f"MeanLoss: {mean_loss.mean(axis=0)}\n")
+        f.write(f"MeanLoss: {mean_price_diff.mean(axis=0)}\n")
         f.write(f"MeanCorrect: {mean_correct.mean()}\n")
         f.write(f"CorrectUp Rate: {correct_updown.mean()}\n")
         f.write(f"ForecastUp Rate: {forecast_updown.mean()}\n")
 
         f.write("\n\n")
     """
-    print(f"MeanLoss: {mean_loss.mean(axis=0)}\n")
+    print(f"loss: {loss.mean()}\n")
+    print(f"MeanPriceDiff: {mean_price_diff.mean(axis=0)}\n")
     print(f"MeanCorrect: {mean_correct.mean()}\n")
     print(f"CorrectUp Rate: {correct_updown.mean()}\n")
     print(f"ForecastUp Rate: {forecast_updown.mean()}\n")
