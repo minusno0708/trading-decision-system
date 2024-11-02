@@ -19,6 +19,9 @@ class Model:
     def forecast(self, test_data: pd.DataFrame):
         return self.model.forecast(test_data)
 
+    def evaluate(self, test_data: pd.DataFrame):
+        return self.model.evaluate(test_data)
+
     def save(self, str_path: str):
         self.model.save(str_path)
 

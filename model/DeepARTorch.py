@@ -5,8 +5,10 @@ import torch.nn as nn
 
 from gluonts.dataset.common import ListDataset
 from gluonts.torch import DeepAREstimator as TorchDeepAREstimator
-from gluonts.evaluation.backtest import make_evaluation_predictions
+from gluonts.evaluation.backtest import make_evaluation_predictions, backtest_metrics
 from gluonts.model.predictor import Predictor
+
+from gluonts.evaluation import Evaluator
 
 from pathlib import Path
 import os
@@ -55,6 +57,22 @@ class Model:
         forecasts = list(self.model.predict(dataset))
 
         return forecasts
+
+    def evaluate(self, test_data: pd.DataFrame):
+        dataset = ListDataset(
+            [{"start": test_data.index[0], "target": test_data["close"]}],
+            freq="1D",
+        )
+
+        forecast_it, ts_it = make_evaluation_predictions(
+            dataset=dataset,
+            predictor=self.model,
+            num_samples=1000
+        )
+
+        evaluator = Evaluator()
+        agg_metrics, item_metrics = evaluator(ts_it, forecast_it, num_series=len(dataset))
+        return agg_metrics, item_metrics
 
     def save(self, str_path: str):
         path = Path(str_path)
