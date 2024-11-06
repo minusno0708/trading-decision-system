@@ -1,7 +1,7 @@
 import pandas as pd
 
-from model.DeepARTorch import Model as TorchModel
-from model.DeepARMxnet import Model as MxModel
+from model.DeepAR.torch import Model as TorchModel
+from model.DeepAR.mxnet import Model as MxModel
 
 class Model:
     def __init__(self, input_length: int, output_length: int, model_type="torch"):
