@@ -19,8 +19,13 @@ class Model:
     def forecast(self, test_data: pd.DataFrame):
         return self.model.forecast(test_data)
 
+    # テストデータの末尾の部分を予測した結果の評価
     def evaluate(self, test_data: pd.DataFrame):
         return self.model.evaluate(test_data)
+
+    # テストデータ全体の評価
+    def backtest(self, test_data: pd.DataFrame):
+        return self.model.backtest(test_data)
 
     def save(self, str_path: str):
         self.model.save(str_path)

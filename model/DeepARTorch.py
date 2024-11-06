@@ -25,8 +25,8 @@ class Model:
             context_length=input_length,
             freq="D",
             trainer_kwargs={"max_epochs": 100},
-            num_layers = 3,
-            hidden_size = 80,
+            num_layers = 2,
+            hidden_size = 40,
             lr = 0.001,
             weight_decay = 1e-08,
             dropout_rate = 0.1,
@@ -72,6 +72,22 @@ class Model:
 
         evaluator = Evaluator()
         agg_metrics, item_metrics = evaluator(ts_it, forecast_it, num_series=len(dataset))
+        return agg_metrics, item_metrics
+
+    def backtest(self, test_data: pd.DataFrame):
+        evaluator = Evaluator(quantiles=[0.1, 0.5, 0.9])
+
+        test_dataset = ListDataset(
+            [{"start": test_data.index[0], "target": test_data["close"]}],
+            freq="1D",
+        )
+
+        agg_metrics, item_metrics = backtest_metrics(
+            test_dataset=test_dataset,
+            predictor=self.model,
+            evaluator=evaluator,
+        )
+
         return agg_metrics, item_metrics
 
     def save(self, str_path: str):
