@@ -9,18 +9,25 @@ from gluonts.evaluation import Evaluator
 from pathlib import Path
 import os
 
-from model.DeepAR.torch import model as torch_model
-from model.DeepAR.mxnet import model as mx_model
+from model.deepar.torch import model as torch_model
+from model.deepar.mxnet import model as mx_model
 
 class Model:
-    def __init__(self, input_length: int, output_length: int, model_type="torch"):
-        self.input_length = input_length
-        self.output_length = output_length
+    def __init__(
+            self,
+            context_length: int,
+            prediction_length: int,
+            epochs: int = 100,
+            num_parallel_samples: int = 1000,
+            model_type="torch"
+        ):
+        self.context_length = context_length
+        self.prediction_length = prediction_length
 
         if model_type == "torch":
-            self.model = torch_model(input_length, output_length)
+            self.model = torch_model(context_length, prediction_length, epochs, num_parallel_samples)
         elif model_type == "mxnet":
-            self.model = mx_model(input_length, output_length)
+            self.model = mx_model(context_length, prediction_length, epochs, num_parallel_samples)
 
     def train(self, train_data: pd.DataFrame):
         dataset = ListDataset(
