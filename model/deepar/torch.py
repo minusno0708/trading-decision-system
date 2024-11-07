@@ -1,8 +1,6 @@
-import pandas as pd
-
 import torch
 
-from gluonts.torch import DeepAREstimator as TorchDeepAREstimator
+from gluonts.torch import DeepAREstimator as DeepAREstimator
 
 torch.set_float32_matmul_precision("high")
 
@@ -12,7 +10,7 @@ def model(
         epochs: int,
         num_parallel_samples: int,
     ):
-    return TorchDeepAREstimator(
+    return DeepAREstimator(
         prediction_length=prediction_length,
         context_length=context_length,
         freq="D",
