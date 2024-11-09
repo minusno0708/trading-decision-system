@@ -1,4 +1,4 @@
-from gluonts.mx.model.deepar import DeepAREstimator
+from gluonts.mx.model.deepvar import DeepVAREstimator
 from gluonts.mx.trainer import Trainer
 
 def model(
@@ -8,7 +8,7 @@ def model(
         epochs: int,
         num_parallel_samples: int,
     ):
-    return DeepAREstimator(
+    return DeepVAREstimator(
         prediction_length=prediction_length,
         context_length=context_length,
         num_parallel_samples=num_parallel_samples,

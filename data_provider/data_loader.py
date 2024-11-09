@@ -10,11 +10,13 @@ class DataLoader:
     def __init__(self,
         file_path: str,
         prediction_length: int,
+        freq: str = "D",
         train_start_date: datetime.datetime = "2000-01-01",
         test_start_date: datetime.datetime = "2023-01-01",
         scaler_flag: bool = True,
     ):
         self.prediction_length = prediction_length
+        self.freq = freq
 
         self.scaler = StandardScaler()
 

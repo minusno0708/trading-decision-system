@@ -1,4 +1,4 @@
-from gluonts.mx.model.deepar import DeepAREstimator
+from gluonts.mx.model.transformer import TransformerEstimator
 from gluonts.mx.trainer import Trainer
 
 def model(
@@ -8,13 +8,12 @@ def model(
         epochs: int,
         num_parallel_samples: int,
     ):
-    return DeepAREstimator(
+    return TransformerEstimator(
         prediction_length=prediction_length,
         context_length=context_length,
         num_parallel_samples=num_parallel_samples,
-        cell_type="lstm",
+        freq=freq,
         trainer=Trainer(
             epochs=epochs,
         ),
-        freq=freq,
     )

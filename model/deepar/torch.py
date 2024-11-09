@@ -7,13 +7,14 @@ torch.set_float32_matmul_precision("high")
 def model(
         context_length: int,
         prediction_length: int,
+        freq: str,
         epochs: int,
         num_parallel_samples: int,
     ):
     return DeepAREstimator(
         prediction_length=prediction_length,
         context_length=context_length,
-        freq="D",
+        freq=freq,
         trainer_kwargs={"max_epochs": epochs},
         num_layers = 2,
         hidden_size = 40,
