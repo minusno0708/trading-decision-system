@@ -6,25 +6,32 @@ from sklearn.preprocessing import StandardScaler
 import os
 import datetime
 
-current_dir = os.path.dirname(__file__)
-file_dir = "../dataset/"
-
 class DataLoader:
-    def __init__(self, prediction_length: int):
+    def __init__(self,
+        file_path: str,
+        prediction_length: int,
+        train_start_date: datetime.datetime = "2000-01-01",
+        test_start_date: datetime.datetime = "2023-01-01",
+        scaler_flag: bool = True,
+    ):
         self.prediction_length = prediction_length
 
         self.scaler = StandardScaler()
 
+        self.load(
+            file_path=file_path,
+            train_start_date=train_start_date,
+            test_start_date=test_start_date,
+            scaler_flag=scaler_flag
+        )
+
     def load(self, 
-            file_name: str,
-            scaler_flag = True,
-            train_start_date: datetime.datetime = None,
-            test_start_date: datetime.datetime = None
-            ) -> list[pd.DataFrame, pd.DataFrame]:
-        
-
-        file_path = current_dir + "/" + file_dir + file_name
-
+        file_path: str,
+        train_start_date: datetime.datetime,
+        test_start_date: datetime.datetime,
+        scaler_flag: bool,
+    ):
+        # データの読み込み
         df_row = pd.read_csv(file_path)
 
         # 不要な列を削除
@@ -38,15 +45,8 @@ class DataLoader:
         df_row = df_row.sort_values("timeOpen")
         df_row = df_row.set_index("timeOpen")
 
-        # 学習データとテストデータの開始日を設定
-        if train_start_date is None:
-            train_start_date = df_row.index[0]
-        if test_start_date is None:
-            test_start_date = datetime.datetime(2023, 1, 1)
-
         # データの範囲を選択
         df_row = df_row[df_row.index >= train_start_date]
-        #df_row = df_row[df_row.index < datetime.datetime(test_start_date.year + 1, 1, 1)]
 
         # 値を標準化
         if scaler_flag:
@@ -56,7 +56,8 @@ class DataLoader:
         train_data = df_row[df_row.index < test_start_date]
         test_data = df_row[df_row.index >= test_start_date - datetime.timedelta(days=self.prediction_length)]
 
-        return train_data, test_data 
+        self.train = train_data
+        self.test = test_data 
 
     def inverse_transform(self, values: np.ndarray) -> np.ndarray:
         return self.scaler.inverse_transform([values])

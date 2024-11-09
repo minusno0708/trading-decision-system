@@ -1,6 +1,6 @@
 import torch
 
-from gluonts.torch import DeepAREstimator as DeepAREstimator
+from gluonts.torch import DeepAREstimator
 
 torch.set_float32_matmul_precision("high")
 

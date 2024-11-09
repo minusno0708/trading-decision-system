@@ -1,4 +1,4 @@
-from gluonts.mx.model.deepar import DeepAREstimator as DeepAREstimator
+from gluonts.mx.model.deepar import DeepAREstimator
 from gluonts.mx.trainer import Trainer
 
 def model(
