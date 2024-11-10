@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from data_provider.data_loader import DataLoader
-from model.DeepAR import TorchModel as Model
-#from model.DeepAR import MxModel as Model
+from data_provider.gluonts_data_provider import GluontsDataProvider
+from model import Model
 
 import numpy as np
 import pandas as pd
@@ -14,10 +14,24 @@ import datetime
 import math
 import statistics
 
+from gluonts.evaluation import Evaluator
+from gluonts.evaluation.backtest import make_evaluation_predictions
+
+import properscoring as ps
+
 input_length = 30
 output_length = 30
 
 train_flag = True
+evaluation_mode = [
+    #"backtest",
+    #"crps",
+    #"updown",
+    "diff_price",
+]
+
+model_type = "torch"
+model_name = "deepar"
 
 seed = 0
 
@@ -76,92 +90,99 @@ def log_likelihood(y_true, y_pred_prob):
 def main(train_start_year: int = 2010, test_start_year: int = 2023):
     crypto = "btc"
 
-    data_loader = DataLoader(input_length)
-    train_data, test_data = data_loader.load(f"{crypto}.csv", True, datetime.datetime(train_start_year, 1, 1), datetime.datetime(test_start_year, 1, 1))
+    data_loader = GluontsDataProvider(
+        file_path=f"dataset/{crypto}.csv",
+        prediction_length=output_length,
+        context_length=input_length,
+        freq="D",
+        train_start_date=datetime.datetime(train_start_year, 1, 1),
+        test_start_date=datetime.datetime(test_start_year, 1, 1),
+        scaler_flag=True
+    )
 
-    loss = np.array([])
+    crps_error = np.array([])
     mean_price_diff = np.empty((0, output_length))
     mean_correct = np.array([])
 
     forecast_updown = np.array([])
     correct_updown = np.array([])
 
-    model = Model(input_length, output_length)
+    model = Model(
+        context_length=input_length,
+        prediction_length=output_length,
+        freq="D",
+        epochs=1,
+        num_parallel_samples=1000,
+        model_name=model_name,
+        model_type=model_type
+    )
 
+    # training
     if train_flag:
-        train_log = model.train(train_data)
+        train_log = model.train(data_loader.train_dataset())
         model.save(f"output/models/{crypto}_model")
+        print(train_log)
     else:
         model.load(f"output/models/{crypto}_model")
 
-    print(train_log)
+    # evaluation
+    if "backtest" in evaluation_mode:
+        agg_metrics, item_metrics = model.backtest(data_loader.train_dataset())
 
-    if False:
-        for i in range(0, len(train_data) - input_length - output_length):
-            target_data = train_data.iloc[range(i, input_length + i), [0]]
-            correct_data = train_data.iloc[range(i + input_length, input_length + i + output_length), [0]]
+        print("Train")
+        print("agg metrics:", agg_metrics)
+        print("item_metrics:", item_metrics)
 
-            forecasts = model.forecast(target_data)
+        agg_metrics, item_metrics = model.backtest(data_loader.test_dataset())
 
-            loss = np.append(loss, log_likelihood(correct_data.values.flatten(), forecasts[0].samples))
-            
-        print(f"Train Data Loss: {loss.mean()}\n")
+        print("Test")
+        print("agg metrics:", agg_metrics)
+        print("item_metrics:", item_metrics)
 
-        loss = np.array([])
+    for i in range(data_loader.test_length()):
+        if i % 100 == 0:
+            print(f"Forecasting {i} Days")
 
-    for i in range(0, len(test_data) - input_length - output_length):
-
-        target_data = test_data.iloc[range(i, input_length + i), [0]]
-        correct_data = test_data.iloc[range(i + input_length, input_length + i + output_length), [0]]
+        target_data, correct_data = data_loader.test_prediction_data(i)
+        correct_data = data_loader.listdata_values(correct_data)
 
         forecasts = model.forecast(target_data)
 
-        loss = np.append(loss, log_likelihood(correct_data.values.flatten(), forecasts[0].samples))
-        
-        if i % 50 == 0:
-            print(f"Forecasting: {i}")
-            draw_predict_graph(target_data, forecasts, correct_data, crypto, i)
+        # CRPS 誤差の計算
+        if "crps" in evaluation_mode:  
+            for d in range(output_length):
+                crps_error = np.append(crps_error, ps.crps_ensemble(correct_data[d], forecasts[0].samples[:, d]))
 
-        correct_inverse = data_loader.inverse_transform(correct_data.values.flatten())[0]
-        mean_inverse = data_loader.inverse_transform(forecasts[0].mean)[0]
+        # 実際の価格との差分の計算
+        if "diff_price" in evaluation_mode:
+            correct_inverse = data_loader.inverse_transform(correct_data)[0]
+            mean_inverse = data_loader.inverse_transform(forecasts[0].mean)[0]
 
-        mean_price_diff = np.append(mean_price_diff, [rmse(correct_inverse, mean_inverse)], axis=0)
+            mean_price_diff = np.append(mean_price_diff, [rmse(correct_inverse, mean_inverse)], axis=0)
 
-        correct_flag = target_data.values[-1] < correct_data.values.flatten()[0]
-        mean_flag = target_data.values[-1] < forecasts[0].mean[0]
+        # 正解と予測の上下の判定
+        if "updown" in evaluation_mode:
+            past_day_value = data_loader.listdata_values(target_data)[-1]
 
-        correct_updown = np.append(correct_updown, correct_flag)
-        forecast_updown = np.append(forecast_updown, mean_flag)
+            correct_flag = past_day_value < correct_data[0]
+            correct_updown = np.append(correct_updown, correct_flag)
 
-        mean_correct = np.append(mean_correct, correct_flag == mean_flag)
+            forecast_mean_flag = past_day_value < forecasts[0].mean[0]
+            forecast_updown = np.append(forecast_updown, forecast_mean_flag)
+
+            mean_correct = np.append(mean_correct, correct_flag == forecast_mean_flag)
     
-    """
-    with open("test.txt", "a") as f:
-        f.write(f"Train: {train_start_year}, Test: {test_start_year}\n")
-        
-        f.write(f"MeanLoss: {mean_price_diff.mean(axis=0)}\n")
-        f.write(f"MeanCorrect: {mean_correct.mean()}\n")
-        f.write(f"CorrectUp Rate: {correct_updown.mean()}\n")
-        f.write(f"ForecastUp Rate: {forecast_updown.mean()}\n")
+    if "crps" in evaluation_mode:  
+        print(f"CRPS Loss: {crps_error.mean()}")
 
-        f.write("\n\n")
-    """
-    print(f"Validation Loss: {loss.mean()}\n")
-    print(f"MeanPriceDiff: {mean_price_diff.mean(axis=0)}\n")
-    print(f"MeanCorrect: {mean_correct.mean()}\n")
-    print(f"CorrectUp Rate: {correct_updown.mean()}\n")
-    print(f"ForecastUp Rate: {forecast_updown.mean()}\n")
+    if "diff_price" in evaluation_mode:
+        print(f"MeanPriceDiff: {mean_price_diff.mean(axis=0)}")
 
-    print("success")
+    if "updown" in evaluation_mode:
+        print(f"MeanCorrect: {mean_correct.mean()}")
+        print(f"CorrectUp Rate: {correct_updown.mean()}")
+        print(f"ForecastUp Rate: {forecast_updown.mean()}")
 
 
 if __name__ == "__main__":
     main()
-    """
-    year_term = [2010, 2024]
-    train_year = 2
-    test_year = 1
-    for i in range(year_term[0], year_term[1] - test_year):
-        print(f"Train: {i}, Test: {i + train_year}")
-        main(i, i + train_year)
-    """
