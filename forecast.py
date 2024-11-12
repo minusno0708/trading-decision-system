@@ -114,6 +114,8 @@ def main(
 
     data_loader = GluontsDataProvider(
         file_path=f"dataset/{crypto}.csv",
+        index_col="timeOpen",
+        target_cols=["close"],
         prediction_length=output_length,
         context_length=input_length,
         freq="D",
