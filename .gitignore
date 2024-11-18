@@ -1,6 +1,7 @@
 /venv
 
 /output
+/log
 /lightning_logs
 
 __pycache__/
