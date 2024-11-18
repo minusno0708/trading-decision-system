@@ -23,7 +23,7 @@ class GluontsDataProvider(DataLoader):
         
     def gluonts_data_formatter(self, dataset):
         return ListDataset(
-            [{"start": dataset.index[0], "target": dataset["close"]}],
+            [{"start": dataset.index[0], "target": dataset[col]} for col in self.target_cols],
             freq=self.freq,
         )
 

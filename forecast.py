@@ -24,12 +24,14 @@ from logger import Logger
 import os
 
 is_training = True
+is_pre_scaling = False
+
 evaluation_mode = [
     "backtest",
-    "crps",
-    "updown",
-    "diff_price",
-    "plot_forecast"
+    #"crps",
+    #"updown",
+    #"diff_price",
+    #"plot_forecast"
 ]
 
 def draw_graph(x_data: list, y_data: list, name: str):
@@ -111,6 +113,8 @@ def main(
 
     crypto = "btc"
     logger = Logger(experiment_name)
+    logger.timestamp()
+    logger.log(f"Seed: {seed}")
 
     data_loader = GluontsDataProvider(
         file_path=f"dataset/{crypto}.csv",
@@ -121,7 +125,7 @@ def main(
         freq="D",
         train_start_date=datetime.datetime(train_start_year, 1, 1),
         test_start_date=datetime.datetime(test_start_year, 1, 1),
-        scaler_flag=True
+        scaler_flag=is_pre_scaling
     )
 
     # 評価用の変数
@@ -165,7 +169,7 @@ def main(
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=0,
+        epochs=100,
         num_parallel_samples=1000,
         model_name=model_name,
         model_type=model_type
@@ -181,17 +185,20 @@ def main(
     # evaluation
     if "backtest" in evaluation_mode:
         logger.log("Backtest")
-
+        """
         agg_metrics, item_metrics = model.backtest(data_loader.train_dataset())
 
         logger.log("Train")
-        logger.log(f"agg metrics: {agg_metrics}")
+        logger.log("--- agg metrics ---")
+        logger.log(agg_metrics)
         print("item_metrics:", item_metrics)
+        """
 
         agg_metrics, item_metrics = model.backtest(data_loader.test_dataset())
 
         logger.log("Test")
-        logger.log(f"agg metrics: {agg_metrics}")
+        logger.log("--- agg metrics ---")
+        logger.log(agg_metrics)
         print("item_metrics:", item_metrics)
 
         logger.log("\n")
@@ -222,8 +229,12 @@ def main(
 
         # 実際の価格との差分の計算
         if "diff_price" in evaluation_mode:
-            correct_inverse = data_loader.inverse_transform(correct_data_values)[0]
-            mean_inverse = data_loader.inverse_transform(forecasts[0].mean)[0]
+            if is_pre_scaling:
+                correct_inverse = data_loader.inverse_transform(correct_data_values)[0]
+                mean_inverse = data_loader.inverse_transform(forecasts[0].mean)[0]
+            else:
+                correct_inverse = correct_data_values
+                mean_inverse = forecasts[0].mean
 
             mean_price_diff = np.append(mean_price_diff, [rmse(correct_inverse, mean_inverse)], axis=0)
 
@@ -245,7 +256,8 @@ def main(
         logger.log("\n")
 
     if "diff_price" in evaluation_mode:
-        logger.log(f"MeanPriceDiff: {mean_price_diff.mean(axis=0)}")
+        logger.log("--- MeanPriceDiff ---")
+        logger.log(mean_price_diff.mean(axis=0))
         logger.log("\n")
 
     if "updown" in evaluation_mode:
@@ -258,30 +270,17 @@ def main(
             logger.log("\n")
 
     logger.log("Evaluation Done")
+    logger.log("--------------------\n")
 
 
 if __name__ == "__main__":
-    main(
-        experiment_name="deepar-torch-no-train",
-        model_name="deepar",
-        model_type="torch",
-        input_length=30,
-        output_length=30,
-        train_start_year=2010,
-        test_start_year=2023,
-        seed=0
-    )
-    """
-    experiment = [
-        ["deepar", "torch"],
-        ["deepar", "mxnet"],
-        ["transformer", "mxnet"],
-    ]
+    if True:
+        exp = ["deepar", "torch"]
+        
+        for s in range(5):
 
-    for s in range(5):
-        for exp in experiment:
             main(
-                experiment_name=f"{exp[0]}-{exp[1]}-seed{s}",
+                experiment_name=f"distr-gamma-no-scaling",
                 model_name=exp[0],
                 model_type=exp[1],
                 input_length=30,
@@ -290,4 +289,23 @@ if __name__ == "__main__":
                 test_start_year=2023,
                 seed=s
             )
-    """
+
+    else:
+        experiment = [
+            ["deepar", "torch"],
+            ["deepar", "mxnet"],
+            ["transformer", "mxnet"],
+        ]
+
+        for s in range(5):
+            for exp in experiment:
+                main(
+                    experiment_name=f"no-scaling-{exp[0]}-{exp[1]}-seed{s}",
+                    model_name=exp[0],
+                    model_type=exp[1],
+                    input_length=30,
+                    output_length=30,
+                    train_start_year=2010,
+                    test_start_year=2023,
+                    seed=s
+                )

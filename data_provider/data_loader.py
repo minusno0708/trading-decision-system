@@ -28,7 +28,9 @@ class DataLoader:
         self.test_start_date = test_start_date
         self.scaler_flag = scaler_flag
 
-        self.scaler = StandardScaler()
+        self.scaler = {}
+        for col in self.target_cols:
+            self.scaler[col] = StandardScaler()
 
         self.load()
 
@@ -52,7 +54,8 @@ class DataLoader:
 
         # 値を標準化
         if self.scaler_flag:
-            df_row[self.target_cols[0]] = self.scaler.fit_transform(df_row[self.target_cols[0]].values.reshape(-1, 1))
+            for col in self.target_cols:
+                df_row[col] = self.scaler[col].fit_transform(df_row[col].values.reshape(-1, 1))
 
         # データを分割
         train_data = df_row[df_row.index < self.test_start_date]
@@ -61,5 +64,5 @@ class DataLoader:
         self.train = train_data
         self.test = test_data 
 
-    def inverse_transform(self, values: np.ndarray) -> np.ndarray:
-        return self.scaler.inverse_transform([values])
+    def inverse_transform(self, values: np.ndarray, col: str = "close") -> np.ndarray:
+        return self.scaler[col].inverse_transform([values])
