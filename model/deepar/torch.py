@@ -1,6 +1,7 @@
 import torch
 
 from gluonts.torch import DeepAREstimator
+from gluonts.torch.distributions import StudentTOutput, NegativeBinomialOutput, NormalOutput, LaplaceOutput, BetaOutput, GammaOutput
 
 torch.set_float32_matmul_precision("high")
 
@@ -29,4 +30,9 @@ def model(
         num_parallel_samples = num_parallel_samples,
         batch_size = 32,
         num_batches_per_epoch = 50,
+        #distr_output = StudentTOutput(),
+        #distr_output = NegativeBinomialOutput(),
+        #distr_output = NormalOutput(),
+        #distr_output = LaplaceOutput(),
+        distr_output = BetaOutput(),
     )

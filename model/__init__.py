@@ -88,12 +88,13 @@ class Model:
 
     # テストデータ全体の評価
     def backtest(self, dataset: ListDataset):
-        evaluator = Evaluator(quantiles=[0.1, 0.5, 0.9])
+        evaluator = Evaluator(quantiles=[0.1, 0.5, 0.8, 0.9])
 
         agg_metrics, item_metrics = backtest_metrics(
             test_dataset=dataset,
             predictor=self.model,
             evaluator=evaluator,
+            num_samples=1000
         )
 
         return agg_metrics, item_metrics
