@@ -31,7 +31,7 @@ evaluation_mode = [
     #"crps",
     #"updown",
     #"diff_price",
-    #"plot_forecast"
+    "plot_forecast"
 ]
 
 def draw_graph(x_data: list, y_data: list, name: str):
@@ -40,6 +40,12 @@ def draw_graph(x_data: list, y_data: list, name: str):
 
     plt.clf()
     plt.close()
+
+def count_duplicates(path: str, index: int = 0):
+    if os.path.exists(f"{path}_{index}"):
+        return count_duplicates(path, index + 1)
+    else:
+        return index
 
 def draw_predict_graph(
         forecasts: list,
@@ -52,8 +58,11 @@ def draw_predict_graph(
         path = "output/images/forecast"
     ):
 
-    if not os.path.exists(f"{path}/{graph_name}"):
+    if not os.path.exists(f"{path}"):
         os.makedirs(f"{path}/{graph_name}")
+
+    dup_num = count_duplicates(f"{path}/{graph_name}/{graph_num}") + 1
+    graph_num = f"{graph_num}_{dup_num}"
 
     interval = len(target_data_date) // 3 * 2
 
@@ -169,7 +178,7 @@ def main(
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=100,
+        epochs=1000,
         num_parallel_samples=1000,
         model_name=model_name,
         model_type=model_type
@@ -277,17 +286,17 @@ if __name__ == "__main__":
     if True:
         exp = ["deepar", "torch"]
         
-        for s in range(5):
+        for s in range(1):
 
             main(
-                experiment_name=f"distr-gamma-no-scaling",
+                experiment_name=f"deepar-torch",
                 model_name=exp[0],
                 model_type=exp[1],
                 input_length=30,
                 output_length=30,
                 train_start_year=2010,
                 test_start_year=2023,
-                seed=s
+                seed=0
             )
 
     else:
