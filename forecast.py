@@ -24,13 +24,13 @@ from logger import Logger
 import os
 
 is_training = True
-is_pre_scaling = False
+is_pre_scaling = True
 
 evaluation_mode = [
     "backtest",
     #"crps",
-    #"updown",
-    #"diff_price",
+    "updown",
+    "diff_price",
     "plot_forecast"
 ]
 
@@ -42,7 +42,7 @@ def draw_graph(x_data: list, y_data: list, name: str):
     plt.close()
 
 def count_duplicates(path: str, index: int = 0):
-    if os.path.exists(f"{path}_{index}"):
+    if os.path.exists(f"{path}_{index}.png"):
         return count_duplicates(path, index + 1)
     else:
         return index
@@ -58,10 +58,10 @@ def draw_predict_graph(
         path = "output/images/forecast"
     ):
 
-    if not os.path.exists(f"{path}"):
+    if not os.path.exists(f"{path}/{graph_name}"):
         os.makedirs(f"{path}/{graph_name}")
 
-    dup_num = count_duplicates(f"{path}/{graph_name}/{graph_num}") + 1
+    dup_num = count_duplicates(f"{path}/{graph_name}/{graph_num}")
     graph_num = f"{graph_num}_{dup_num}"
 
     interval = len(target_data_date) // 3 * 2
@@ -116,6 +116,7 @@ def main(
         seed: int = 0
     ):
 
+    #random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     mx.random.seed(seed)
@@ -178,7 +179,7 @@ def main(
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=1000,
+        epochs=100,
         num_parallel_samples=1000,
         model_name=model_name,
         model_type=model_type
@@ -205,14 +206,27 @@ def main(
 
         agg_metrics, item_metrics = model.backtest(data_loader.test_dataset())
 
-        logger.log("Test")
-        logger.log("--- agg metrics ---")
+        backtest_metrics = {}
+        for key in agg_metrics:
+            backtest_metrics[key] = np.array([])
+        """
+        #logger.log("Test")
+        logger.set_tag("backtest")
         logger.log(agg_metrics)
         print("item_metrics:", item_metrics)
 
         logger.log("\n")
+        """
+    
 
     for i in range(data_loader.test_length()):
+        if "backtest" in evaluation_mode:
+            agg_metrics, item_metrics = model.backtest(data_loader.test_evaluation_data(i))
+            for key in agg_metrics:
+                backtest_metrics[key] = np.append(backtest_metrics[key], agg_metrics[key])
+
+
+
         target_data, correct_data = data_loader.test_prediction_data(i)
         correct_data_values = data_loader.listdata_values(correct_data)
 
@@ -260,12 +274,19 @@ def main(
 
                 mean_correct[d] = np.append(mean_correct[d], correct_flag == forecast_mean_flag)
     
-    if "crps" in evaluation_mode:  
-        logger.log(f"CRPS Loss: {crps_error.mean()}")
+    if "backtest" in evaluation_mode:
+        logger.set_tag("backtest")
+        for key in backtest_metrics:
+            logger.log(f"{key}: {backtest_metrics[key].mean()}")
+        logger.log("\n")
+
+    if "crps" in evaluation_mode:
+        logger.set_tag("crps")
+        logger.log(crps_error.mean())
         logger.log("\n")
 
     if "diff_price" in evaluation_mode:
-        logger.log("--- MeanPriceDiff ---")
+        logger.set_tag("mean_price_diff")
         logger.log(mean_price_diff.mean(axis=0))
         logger.log("\n")
 
@@ -286,17 +307,17 @@ if __name__ == "__main__":
     if True:
         exp = ["deepar", "torch"]
         
-        for s in range(1):
+        for s in range(10):
 
             main(
-                experiment_name=f"deepar-torch",
+                experiment_name=f"calc-each-backtest-scaled",
                 model_name=exp[0],
                 model_type=exp[1],
                 input_length=30,
                 output_length=30,
                 train_start_year=2010,
                 test_start_year=2023,
-                seed=0
+                seed=s
             )
 
     else:

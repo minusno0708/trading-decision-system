@@ -51,3 +51,7 @@ class Logger:
         with open(self.filepath + self.filename, 'a') as file:
             timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             file.write(timestamp + '\n')
+
+    def set_tag(self, tag):
+        with open(self.filepath + self.filename, 'a') as file:
+            file.write(f"---{tag}---\n")
