@@ -34,5 +34,5 @@ def model(
         #distr_output = NegativeBinomialOutput(),
         #distr_output = NormalOutput(),
         #distr_output = LaplaceOutput(),
-        distr_output = BetaOutput(),
+        #distr_output = BetaOutput(),
     )
