@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 import mxnet as mx
 
+import random
 import datetime
 import math
 import statistics
@@ -18,19 +19,19 @@ import properscoring as ps
 from data_provider.data_loader import DataLoader
 from data_provider.gluonts_data_provider import GluontsDataProvider
 
-from model import Model
+from model.gluonts import Model
 
 from logger import Logger
 import os
 
 is_training = True
-is_pre_scaling = True
+is_pre_scaling = False
 
 evaluation_mode = [
-    "backtest",
+    #"backtest",
     #"crps",
-    "updown",
-    "diff_price",
+    #"updown",
+    #"diff_price",
     "plot_forecast"
 ]
 
@@ -116,7 +117,7 @@ def main(
         seed: int = 0
     ):
 
-    #random.seed(seed)
+    random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     mx.random.seed(seed)
@@ -219,15 +220,15 @@ def main(
         """
     
 
-    for i in range(data_loader.test_length()):
+    for i in range(data_loader.data_length('train')):
         if "backtest" in evaluation_mode:
-            agg_metrics, item_metrics = model.backtest(data_loader.test_evaluation_data(i))
+            agg_metrics, item_metrics = model.backtest(data_loader.evaluation_data(i))
             for key in agg_metrics:
                 backtest_metrics[key] = np.append(backtest_metrics[key], agg_metrics[key])
 
 
 
-        target_data, correct_data = data_loader.test_prediction_data(i)
+        target_data, correct_data = data_loader.prediction_data(i, 'train')
         correct_data_values = data_loader.listdata_values(correct_data)
 
         forecasts = model.forecast(target_data)
@@ -304,38 +305,18 @@ def main(
 
 
 if __name__ == "__main__":
-    if True:
-        exp = ["deepar", "torch"]
-        
-        for s in range(10):
+    exp = ["deepar", "torch"]
+    
+    for s in range(10):
 
-            main(
-                experiment_name=f"calc-each-backtest-scaled",
-                model_name=exp[0],
-                model_type=exp[1],
-                input_length=30,
-                output_length=30,
-                train_start_year=2010,
-                test_start_year=2023,
-                seed=s
-            )
+        main(
+            experiment_name=f"train-no-scaling",
+            model_name=exp[0],
+            model_type=exp[1],
+            input_length=30,
+            output_length=30,
+            train_start_year=2010,
+            test_start_year=2023,
+            seed=s
+        )
 
-    else:
-        experiment = [
-            ["deepar", "torch"],
-            ["deepar", "mxnet"],
-            ["transformer", "mxnet"],
-        ]
-
-        for s in range(5):
-            for exp in experiment:
-                main(
-                    experiment_name=f"no-scaling-{exp[0]}-{exp[1]}-seed{s}",
-                    model_name=exp[0],
-                    model_type=exp[1],
-                    input_length=30,
-                    output_length=30,
-                    train_start_year=2010,
-                    test_start_year=2023,
-                    seed=s
-                )
