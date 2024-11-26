@@ -9,15 +9,25 @@ class GluontsDataProvider(DataLoader):
     def test_dataset(self):
         return self.gluonts_data_formatter(self.test)
 
-    def test_length(self):
-        return len(self.test) - self.context_length - self.prediction_length
+    def data_length(self, target: str = "test"):
+        if target == "train":
+            return len(self.train) - self.context_length - self.prediction_length
+        else:
+            return len(self.test) - self.context_length - self.prediction_length
 
-    def test_evaluation_data(self, num_segment: int):
-        return self.gluonts_data_formatter(self.test.iloc[num_segment:num_segment + self.context_length + self.prediction_length])
+    def evaluation_data(self, num_segment: int, target: str = "test"):
+        if target == "train":
+            return self.gluonts_data_formatter(self.train.iloc[num_segment:num_segment + self.context_length + self.prediction_length])
+        else:
+            return self.gluonts_data_formatter(self.test.iloc[num_segment:num_segment + self.context_length + self.prediction_length])
 
-    def test_prediction_data(self, num_segment: int):
-        target_data = self.gluonts_data_formatter(self.test.iloc[num_segment:num_segment + self.context_length])
-        correct_data = self.gluonts_data_formatter(self.test.iloc[num_segment + self.context_length:num_segment + self.context_length + self.prediction_length])
+    def prediction_data(self, num_segment: int, target: str = "test"):
+        if target == "train":
+            target_data = self.gluonts_data_formatter(self.train.iloc[num_segment:num_segment + self.context_length])
+            correct_data = self.gluonts_data_formatter(self.train.iloc[num_segment + self.context_length:num_segment + self.context_length + self.prediction_length])
+        else:
+            target_data = self.gluonts_data_formatter(self.test.iloc[num_segment:num_segment + self.context_length])
+            correct_data = self.gluonts_data_formatter(self.test.iloc[num_segment + self.context_length:num_segment + self.context_length + self.prediction_length])
 
         return target_data, correct_data
         
