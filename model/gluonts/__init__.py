@@ -10,10 +10,10 @@ from gluonts.evaluation import Evaluator
 from pathlib import Path
 import os
 
-from model.deepar import model as deepar_model
-from model.deepvar import model as deepvar_model
-from model.transformer import model as transformer_model
-from model.itransformer import model as itransformer_model
+from model.gluonts.deepar import model as deepar_model
+from model.gluonts.deepvar import model as deepvar_model
+from model.gluonts.transformer import model as transformer_model
+from model.gluonts.itransformer import model as itransformer_model
 
 class Model:
     def __init__(

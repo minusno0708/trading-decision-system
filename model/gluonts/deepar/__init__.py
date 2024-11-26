@@ -1,5 +1,5 @@
-from model.deepar.torch import model as torch_model
-from model.deepar.mxnet import model as mx_model
+from model.gluonts.deepar.torch import model as torch_model
+from model.gluonts.deepar.mxnet import model as mx_model
 
 def model(
         context_length: int,
