@@ -10,6 +10,8 @@ from data_provider.pytorch_data_provider import PytorchDataProvider
 
 from model.pytorch import Model
 
+import matplotlib.pyplot as plt
+
 seed = 0
 
 random.seed(seed)
@@ -17,6 +19,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 
 def main():
+    print(seed)
     input_length = 30
     output_length = 30
     train_start_year = 2010
@@ -39,11 +42,33 @@ def main():
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=100,
-        num_parallel_samples=100
+        epochs=1000
     )
 
-    print('success')
+    model.train(data_loader.train_dataset(batch_size=32, is_shuffle=True))
+
+    for i, (start_date, input_x, target_x, time_feature) in enumerate(data_loader.train_dataset(batch_size=1, is_shuffle=False)):
+        if i % 100 == 0:
+            print(f"forecasting {i}th data")
+            mean, var = model.forecast(input_x)
+
+            target_x = target_x.detach().numpy().reshape(-1)
+            mean = mean.reshape(-1)
+
+            fig, ax = plt.subplots()
+
+            ax.plot(target_x, label="target")
+            ax.plot(mean, label="forecast")
+
+            plt.legend()
+
+            plt.savefig(f"output/images/self_forecast/train1000_{i}_{seed}.png")
+
 
 if __name__ == "__main__":
-    main()
+    for s in range(0, 5):
+        seed = s
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        main()
