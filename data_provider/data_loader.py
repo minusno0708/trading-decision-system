@@ -66,3 +66,23 @@ class DataLoader:
 
     def inverse_transform(self, values: np.ndarray, col: str = "close") -> np.ndarray:
         return self.scaler[col].inverse_transform([values])
+
+    def max(self, label: str = "all"):
+        if label == "train":
+            return self.train.max().values[0]
+        elif label == "test":
+            return self.test.max().values[0]
+        else:
+            train_max = self.train.max().values[0]
+            test_max = self.test.max().values[0]
+            return train_max if train_max > test_max else test_max
+
+    def min(self, label: str = "all"):
+        if label == "train":
+            return self.train.min().values[0]
+        elif label == "test":
+            return self.test.min().values[0]
+        else:
+            train_min = self.train.min().values[0]
+            test_min = self.test.min().values[0]
+            return train_min if train_min < test_min else test_min
