@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 import torch
@@ -42,6 +43,7 @@ class Model:
         train_loss = []
 
         for epoch in range(self.epochs):
+            loss_arr = np.array([])
             for i, (start_date, input_x, target_x, time_feature) in enumerate(dataset):
                 optimizer.zero_grad()
                 batch_size = input_x.shape[0]
@@ -54,13 +56,15 @@ class Model:
                 mean, var = self.model(input_x, hidden)
                 
                 loss = self.criterion(mean, target_x, var)
+                loss_arr = np.append(loss_arr, loss.item())
                 
                 # モデルの更新
                 loss.backward()
                 optimizer.step()
-                
-            train_loss.append(loss.item())
-            print(f'Epoch [{epoch+1}/{self.epochs}], Loss: {loss.item():.4f}')
+            
+            loss_mean = np.mean(loss_arr)
+            train_loss.append(loss_mean)
+            print(f'Epoch [{epoch+1}/{self.epochs}], Loss: {loss_mean:.4f}')
 
         return train_loss
 
