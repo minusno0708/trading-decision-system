@@ -42,7 +42,7 @@ class CustomDataset(Dataset):
 
         return start_date, input_x, target_x, time_feature
 
-class PytorchDataProvider(SelfDataLoader):
+class CustomDataProvider(SelfDataLoader):
     def train_dataset(self, batch_size, is_shuffle=True):
         torch_dataset = CustomDataset(self.train["close"].values, self.train.index.values, self.context_length, self.prediction_length, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
