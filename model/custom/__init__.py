@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from model.pytorch.estimator import Estimator
-from model.pytorch.output import ForecastOutput
+from model.custom.estimator import Estimator
+from model.custom.output import ForecastOutput
 
 class Model:
     def __init__(

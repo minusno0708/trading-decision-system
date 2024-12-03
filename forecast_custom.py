@@ -8,7 +8,7 @@ import datetime
 from data_provider.data_loader import DataLoader
 from data_provider.pytorch_data_provider import PytorchDataProvider
 
-from model.pytorch import Model
+from model.custom import Model
 from evaluator import Evaluator
 from logger import Logger
 
@@ -23,7 +23,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 
 output_path = "output/images/self_forecast"
-exp_name = "exp_add_val_2017"
+exp_name = "exp1203_add_val_2017"
 
 if not os.path.exists(f"{output_path}/{exp_name}"):
     os.makedirs(f"{output_path}/{exp_name}")
@@ -35,7 +35,7 @@ def main():
     test_start_year = 2023
     is_pre_scaling = True
 
-    logger = Logger(f"self_{exp_name}")
+    logger = Logger(exp_name)
     logger.log("Start Self Forecasting, Seed: " + str(seed))
     logger.timestamp()
 
