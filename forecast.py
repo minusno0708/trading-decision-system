@@ -25,7 +25,7 @@ from logger import Logger
 import os
 
 is_training = True
-is_pre_scaling = False
+is_pre_scaling = True
 
 evaluation_mode = [
     #"backtest",
@@ -56,7 +56,8 @@ def draw_predict_graph(
         correct_data: list,
         graph_name: str,
         graph_num: str,
-        path = "output/images/forecast"
+        path = "output/images/gluonts_forecast",
+        ylim = None
     ):
 
     if not os.path.exists(f"{path}/{graph_name}"):
@@ -79,6 +80,9 @@ def draw_predict_graph(
 
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=interval))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
+
+    if ylim is not None:
+        plt.ylim(ylim[0], ylim[1])
 
     plt.legend()
     plt.xlabel("Date")
@@ -180,7 +184,7 @@ def main(
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=100,
+        epochs=1000,
         num_parallel_samples=1000,
         model_name=model_name,
         model_type=model_type
@@ -242,8 +246,9 @@ def main(
                     target_data=data_loader.listdata_values(target_data),
                     correct_data_date=data_loader.listdata_dates(correct_data),
                     correct_data=data_loader.listdata_values(correct_data),
-                    graph_name=experiment_name,
-                    graph_num=i
+                    graph_name="train_" + experiment_name,
+                    graph_num=i,
+                    ylim=(data_loader.min("train") - 0.5, data_loader.max("train") + 0.5)
                 )
 
         # CRPS 誤差の計算
@@ -303,19 +308,46 @@ def main(
     logger.log("Evaluation Done")
     logger.log("--------------------\n")
 
+    for i in range(data_loader.data_length('test')):
+        if "backtest" in evaluation_mode:
+            agg_metrics, item_metrics = model.backtest(data_loader.evaluation_data(i))
+            for key in agg_metrics:
+                backtest_metrics[key] = np.append(backtest_metrics[key], agg_metrics[key])
+
+
+
+        target_data, correct_data = data_loader.prediction_data(i, 'test')
+        correct_data_values = data_loader.listdata_values(correct_data)
+
+        forecasts = model.forecast(target_data)
+
+        if i % 100 == 0:
+            print(f"Forecasting {i} Days")
+            if "plot_forecast" in evaluation_mode:
+                draw_predict_graph(
+                    forecasts=forecasts,
+                    target_data_date=data_loader.listdata_dates(target_data),
+                    target_data=data_loader.listdata_values(target_data),
+                    correct_data_date=data_loader.listdata_dates(correct_data),
+                    correct_data=data_loader.listdata_values(correct_data),
+                    graph_name="test_" + experiment_name,
+                    graph_num=i,
+                    ylim=(data_loader.min("train") - 0.5, data_loader.max("train") + 0.5)
+                )
+
 
 if __name__ == "__main__":
     exp = ["deepar", "torch"]
     
-    for s in range(10):
+    for s in range(5):
 
         main(
-            experiment_name=f"train-no-scaling",
+            experiment_name=f"exp1000_sameself_{s}",
             model_name=exp[0],
             model_type=exp[1],
             input_length=30,
             output_length=30,
-            train_start_year=2010,
+            train_start_year=2017,
             test_start_year=2023,
             seed=s
         )
