@@ -3,23 +3,9 @@ import numpy as np
 class ForecastOutput:
     def __init__(self, mean, var, num_samples = 100):
         self.distribution = {
-            "mean": mean[0, :, :],
-            "var": var[0, :, :]
+            "mean": mean,
+            "var": var
         }
-        self.num_data = mean.shape[0]
-        self.prediction_length = mean.shape[1]
-        self.num_samples = num_samples
-        self.values = self.gen_values()
-
-    def gen_values(self):
-        values = []
-        for i in range(self.num_data):
-            values = Samples(self.distribution["mean"][i], self.distribution["var"][i], self.num_samples)
-
-        return values
-
-class Samples:
-    def __init__(self, mean, var, num_samples):
         self.length = mean.shape[0]
         self.num_samples = num_samples
         self.samples = self.gen_samples(mean, var)

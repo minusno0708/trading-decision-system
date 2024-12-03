@@ -119,11 +119,14 @@ class Model:
             mean, var = self.model(input)
             loss = self.criterion(mean, target, var)
 
-        mean = mean.cpu().numpy()
-        var = var.cpu().numpy()
+        mean = mean.squeeze(0).permute(0, 1).cpu().numpy()
+        var = var.squeeze(0).permute(0, 1).cpu().numpy()
         loss = loss.cpu().numpy()
 
-        output = ForecastOutput(mean, var, self.num_parallel_samples)
+        output = []
+
+        for i in range(len(mean)):
+            output.append(ForecastOutput(mean[i], var[i], self.num_parallel_samples))
 
         return output, loss
         

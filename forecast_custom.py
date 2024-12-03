@@ -6,7 +6,7 @@ import random
 import datetime
 
 from data_provider.data_loader import DataLoader
-from data_provider.pytorch_data_provider import PytorchDataProvider
+from data_provider.custom_data_provider import CustomDataProvider
 
 from model.custom import Model
 from evaluator import Evaluator
@@ -23,7 +23,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 
 output_path = "output/images/self_forecast"
-exp_name = "exp1203_add_val_2017"
+exp_name = "exp1203_test"
 
 if not os.path.exists(f"{output_path}/{exp_name}"):
     os.makedirs(f"{output_path}/{exp_name}")
@@ -40,7 +40,7 @@ def main():
     logger.timestamp()
 
 
-    data_loader = PytorchDataProvider(
+    data_loader = CustomDataProvider(
         file_path=f"dataset/btc.csv",
         index_col="timeOpen",
         target_cols=["close"],
@@ -97,11 +97,11 @@ def main():
 
             input_x = input_x.detach().numpy().reshape(-1)
             target_x = target_x.detach().numpy().reshape(-1)
-            true_mean = forecasts.distribution["mean"].reshape(-1)
-            samples_mean = forecasts.values.mean
-            median = forecasts.values.median
-            quantile_10 = forecasts.values.quantile(0.1)
-            quantile_90 = forecasts.values.quantile(0.9)
+            true_mean = forecasts[0].distribution["mean"].reshape(-1)
+            samples_mean = forecasts[0].mean
+            median = forecasts[0].median
+            quantile_10 = forecasts[0].quantile(0.1)
+            quantile_90 = forecasts[0].quantile(0.9)
 
             fig, ax = plt.subplots()
 
@@ -145,11 +145,11 @@ def main():
 
             input_x = input_x.detach().numpy().reshape(-1)
             target_x = target_x.detach().numpy().reshape(-1)
-            true_mean = forecasts.distribution["mean"].reshape(-1)
-            samples_mean = forecasts.values.mean
-            median = forecasts.values.median
-            quantile_10 = forecasts.values.quantile(0.1)
-            quantile_90 = forecasts.values.quantile(0.9)
+            true_mean = forecasts[0].distribution["mean"].reshape(-1)
+            samples_mean = forecasts[0].mean
+            median = forecasts[0].median
+            quantile_10 = forecasts[0].quantile(0.1)
+            quantile_90 = forecasts[0].quantile(0.9)
 
             fig, ax = plt.subplots()
 
