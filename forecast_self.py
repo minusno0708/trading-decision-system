@@ -23,7 +23,7 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 
 output_path = "output/images/self_forecast"
-exp_name = "exp_1000_2017"
+exp_name = "exp_add_val_2017"
 
 if not os.path.exists(f"{output_path}/{exp_name}"):
     os.makedirs(f"{output_path}/{exp_name}")
@@ -56,20 +56,27 @@ def main():
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=1000,
+        epochs=100,
         num_parallel_samples=1000,
     )
 
     evaluator = Evaluator()
 
-    train_loss = model.train(data_loader.train_dataset(batch_size=64, is_shuffle=True))
+    train_loss, val_loss = model.train(data_loader.train_dataset(batch_size=64, is_shuffle=True), data_loader.test_dataset(batch_size=1, is_shuffle=False))
+    #train_loss, val_loss = model.train(data_loader.train_dataset(batch_size=64, is_shuffle=True))
 
     logger.log("Train Loss")
     logger.log(train_loss)
 
+    logger.log("Val Loss")
+    logger.log(val_loss)
+
     fig, ax = plt.subplots()
 
-    ax.plot(train_loss)
+    ax.plot(train_loss, label="train")
+    ax.plot(val_loss, label="val")
+
+    plt.legend()
 
     plt.savefig(f"{output_path}/{exp_name}/loss_{seed}.png")
 
@@ -175,7 +182,7 @@ def main():
 
 
 if __name__ == "__main__":
-    for s in range(5):
+    for s in range(1):
         seed = s
         random.seed(seed)
         np.random.seed(seed)

@@ -35,15 +35,16 @@ class Model:
 
         self.criterion = nn.GaussianNLLLoss()
 
-    def train(self, dataset: torch.utils.data.DataLoader):
+    def train(self, dataset: torch.utils.data.DataLoader, val_dataset: torch.utils.data.DataLoader = None):
         optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
-        
-        self.model.train()
 
         train_loss = []
+        val_loss = []
 
         for epoch in range(self.epochs):
-            loss_arr = np.array([])
+            self.model.train()
+
+            train_loss_per_epoch = np.array([])
             for i, (start_date, input_x, target_x, time_feature) in enumerate(dataset):
                 optimizer.zero_grad()
                 batch_size = input_x.shape[0]
@@ -56,17 +57,42 @@ class Model:
                 mean, var = self.model(input_x, hidden)
                 
                 loss = self.criterion(mean, target_x, var)
-                loss_arr = np.append(loss_arr, loss.item())
+                train_loss_per_epoch = np.append(train_loss_per_epoch, loss.item())
                 
                 # モデルの更新
                 loss.backward()
                 optimizer.step()
             
-            loss_mean = np.mean(loss_arr)
+            loss_mean = np.mean(train_loss_per_epoch)
             train_loss.append(loss_mean)
-            print(f'Epoch [{epoch+1}/{self.epochs}], Loss: {loss_mean:.4f}')
 
-        return train_loss
+            # 検証データのロスを計算
+            if val_dataset is not None:
+                self.model.eval()
+
+                val_loss_per_epoch = np.array([])
+                with torch.no_grad():
+                    for i, (start_date, input_x, target_x, time_feature) in enumerate(val_dataset):
+                        batch_size = input_x.shape[0]
+                        hidden = self.model.init_hidden(batch_size)
+
+                        input_x = input_x.to(self.device)
+                        target_x = target_x.to(self.device)
+                        time_feature = time_feature.to(self.device)
+
+                        mean, var = self.model(input_x, hidden)
+                        
+                        loss = self.criterion(mean, target_x, var)
+                        val_loss_per_epoch = np.append(val_loss_per_epoch, loss.item())
+            
+                loss_mean = np.mean(val_loss_per_epoch)
+                val_loss.append(loss_mean)
+
+                print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}, val_loss: {val_loss[-1]:.4f}')
+            else:
+                print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}')
+
+        return train_loss, val_loss
 
     def forecast(self, input_x: torch.tensor):
         self.model.eval()
