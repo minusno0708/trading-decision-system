@@ -1,0 +1,15 @@
+python forecast_custom.py \
+    --seed 0 \
+    --output_path output/forecast_jpy \
+    --exp_name exp_test \
+    --data_path dataset/exchange_rate.csv \
+    --index_col date \
+    --target_cols 5 \
+    --train_start_year 1990 \
+    --test_start_year 2015 \
+    --prediction_length 30 \
+    --context_length 30 \
+    --epochs 100 \
+    --num_batches 64 \
+    --num_parallel_samples 1000 \
+    --is_pre_scaling True \
