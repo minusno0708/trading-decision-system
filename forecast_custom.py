@@ -104,13 +104,13 @@ def main(
 
             fig, ax = plt.subplots()
 
-            ax.plot(range(input_length), input_x, label="input")
-            ax.plot(range(input_length, input_length + output_length), target_x, label="target")
-            ax.plot(range(input_length, input_length + output_length), true_mean, label="true_mean")
-            ax.plot(range(input_length, input_length + output_length), samples_mean, label="samples_mean")
-            ax.plot(range(input_length, input_length + output_length), median, label="median")
+            ax.plot(range(context_length), input_x, label="input")
+            ax.plot(range(context_length, context_length + prediction_length), target_x, label="target")
+            ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
+            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="samples_mean")
+            ax.plot(range(context_length, context_length + prediction_length), median, label="median")
             ax.fill_between(
-                range(input_length, input_length + output_length),
+                range(context_length, context_length + prediction_length),
                 quantile_10,
                 quantile_90,
                 alpha=0.3
@@ -152,13 +152,13 @@ def main(
 
             fig, ax = plt.subplots()
 
-            ax.plot(range(input_length), input_x, label="input")
-            ax.plot(range(input_length, input_length + output_length), target_x, label="target")
-            ax.plot(range(input_length, input_length + output_length), true_mean, label="true_mean")
-            ax.plot(range(input_length, input_length + output_length), samples_mean, label="samples_mean")
-            ax.plot(range(input_length, input_length + output_length), median, label="median")
+            ax.plot(range(context_length), input_x, label="input")
+            ax.plot(range(context_length, context_length + prediction_length), target_x, label="target")
+            ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
+            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="samples_mean")
+            ax.plot(range(context_length, context_length + prediction_length), median, label="median")
             ax.fill_between(
-                range(input_length, input_length + output_length),
+                range(context_length, context_length + prediction_length),
                 quantile_10,
                 quantile_90,
                 alpha=0.3
