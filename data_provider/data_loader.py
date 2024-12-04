@@ -43,7 +43,10 @@ class DataLoader:
         df_row = df_row[target_columns]
 
         # 時刻をdatetime型に変換
-        df_row[self.index_col] = pd.to_datetime(df_row[self.index_col], format="%Y-%m-%dT%H:%M:%S.%fZ")
+        if self.file_path == "dataset/exchange_rate.csv":
+            df_row[self.index_col] = pd.to_datetime(df_row[self.index_col], format="%Y/%m/%d %H:%M")
+        else:
+            df_row[self.index_col] = pd.to_datetime(df_row[self.index_col], format="%Y-%m-%dT%H:%M:%S.%fZ")
 
         # 日付順にソート
         df_row = df_row.sort_values(self.index_col)

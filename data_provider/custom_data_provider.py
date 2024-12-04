@@ -44,9 +44,9 @@ class CustomDataset(Dataset):
 
 class CustomDataProvider(SelfDataLoader):
     def train_dataset(self, batch_size, is_shuffle=True):
-        torch_dataset = CustomDataset(self.train["close"].values, self.train.index.values, self.context_length, self.prediction_length, batch_size)
+        torch_dataset = CustomDataset(self.train[self.target_cols[0]].values, self.train.index.values, self.context_length, self.prediction_length, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
 
     def test_dataset(self, batch_size=1, is_shuffle=False):
-        torch_dataset = CustomDataset(self.test["close"].values, self.test.index.values, self.context_length, self.prediction_length, batch_size)
+        torch_dataset = CustomDataset(self.test[self.target_cols[0]].values, self.test.index.values, self.context_length, self.prediction_length, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
