@@ -1,3 +1,5 @@
+import argparse
+
 import numpy as np
 import pandas as pd
 import torch
@@ -16,36 +18,34 @@ import matplotlib.pyplot as plt
 
 import os
 
-seed = 0
+def main(
+    seed,
+    output_path,
+    exp_name,
+    data_path,
+    index_col,
+    target_cols,
+    train_start_year,
+    test_start_year,
+    prediction_length,
+    context_length,
+    epochs,
+    num_batches,
+    num_parallel_samples,
+    is_pre_scaling,
+):
 
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
-
-output_path = "output/images/self_forecast"
-exp_name = "exp1203_test"
-
-if not os.path.exists(f"{output_path}/{exp_name}"):
-    os.makedirs(f"{output_path}/{exp_name}")
-
-def main():
-    input_length = 30
-    output_length = 30
-    train_start_year = 2017
-    test_start_year = 2023
-    is_pre_scaling = True
-
-    logger = Logger(exp_name)
+    logger = Logger(exp_name, f"{output_path}/logs")
     logger.log("Start Self Forecasting, Seed: " + str(seed))
     logger.timestamp()
 
 
     data_loader = CustomDataProvider(
-        file_path=f"dataset/btc.csv",
-        index_col="timeOpen",
-        target_cols=["close"],
-        prediction_length=output_length,
-        context_length=input_length,
+        file_path=data_path,
+        index_col=index_col,
+        target_cols=target_cols,
+        prediction_length=prediction_length,
+        context_length=context_length,
         freq="D",
         train_start_date=datetime.datetime(train_start_year, 1, 1),
         test_start_date=datetime.datetime(test_start_year, 1, 1),
@@ -53,17 +53,16 @@ def main():
     )
 
     model = Model(
-        context_length=input_length,
-        prediction_length=output_length,
+        context_length=context_length,
+        prediction_length=prediction_length,
         freq="D",
-        epochs=100,
-        num_parallel_samples=1000,
+        epochs=epochs,
+        num_parallel_samples=num_parallel_samples,
     )
 
     evaluator = Evaluator()
 
-    train_loss, val_loss = model.train(data_loader.train_dataset(batch_size=64, is_shuffle=True), data_loader.test_dataset(batch_size=1, is_shuffle=False))
-    #train_loss, val_loss = model.train(data_loader.train_dataset(batch_size=64, is_shuffle=True))
+    train_loss, val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=True), data_loader.test_dataset(batch_size=1, is_shuffle=False))
 
     logger.log("Train Loss")
     logger.log(train_loss)
@@ -78,7 +77,7 @@ def main():
 
     plt.legend()
 
-    plt.savefig(f"{output_path}/{exp_name}/loss_{seed}.png")
+    plt.savefig(f"{output_path}/images/{exp_name}/loss_{seed}.png")
 
     print("Forecast Train Data")
     logger.log("Forecast Train Data")
@@ -122,7 +121,7 @@ def main():
             plt.ylim(data_loader.min("train") - 0.5, data_loader.max("train") + 0.5)
             plt.legend()
             
-            plt.savefig(f"{output_path}/{exp_name}/train_{i}_{seed}.png")
+            plt.savefig(f"{output_path}/images/{exp_name}/train_{i}_{seed}.png")
 
     print("End Train Forecasting")
     logger.log("End Train Forecasting")
@@ -170,7 +169,7 @@ def main():
             plt.ylim(data_loader.min("test") - 0.5, data_loader.max("test") + 0.5)
             plt.legend()
 
-            plt.savefig(f"{output_path}/{exp_name}/test_{i}_{seed}.png")
+            plt.savefig(f"{output_path}/images/{exp_name}/test_{i}_{seed}.png")
 
     print("End Test Forecasting")
     logger.log("End Test Forecasting")
@@ -182,9 +181,55 @@ def main():
 
 
 if __name__ == "__main__":
-    for s in range(1):
-        seed = s
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--output_path", type=str, default="output/forecast")
+    parser.add_argument("--exp_name", type=str, default="exp_default")
+
+    parser.add_argument("--data_path", type=str, default="dataset/btc.csv")
+    parser.add_argument("--index_col", type=str, default="timeOpen")
+    parser.add_argument("--target_cols", type=str, default=["close"])
+
+    parser.add_argument("--train_start_year", type=int, default=2000)
+    parser.add_argument("--test_start_year", type=int, default=2023)
+
+    parser.add_argument("--prediction_length", type=int, default=30)
+    parser.add_argument("--context_length", type=int, default=30)
+    parser.add_argument("--epochs", type=int, default=100)
+
+    parser.add_argument("--num_batches", type=int, default=64)
+    parser.add_argument("--num_parallel_samples", type=int, default=1000)
+
+    parser.add_argument("--is_pre_scaling", type=bool, default=True)
+
+    args = parser.parse_args()
+
+    seed = args.seed
+
+    if not os.path.exists(f"{args.output_path}/images/{args.exp_name}"):
+        os.makedirs(f"{args.output_path}/images/{args.exp_name}")
+
+    if not os.path.exists(f"{args.output_path}/logs"):
+        os.makedirs(f"{args.output_path}/logs")
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+
+    main(
+        seed=seed,
+        output_path=args.output_path,
+        exp_name=args.exp_name,
+        data_path=args.data_path,
+        index_col=args.index_col,
+        target_cols=args.target_cols.split(","),
+        train_start_year=args.train_start_year,
+        test_start_year=args.test_start_year,
+        prediction_length=args.prediction_length,
+        context_length=args.context_length,
+        epochs=args.epochs,
+        num_batches=args.num_batches,
+        num_parallel_samples=args.num_parallel_samples,
+        is_pre_scaling=args.is_pre_scaling,
+    )

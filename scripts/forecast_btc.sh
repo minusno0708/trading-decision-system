@@ -1,0 +1,15 @@
+python forecast_custom.py \
+    --seed 0 \
+    --output_path output/forecast_btc \
+    --exp_name exp_test \
+    --data_path dataset/btc.csv \
+    --index_col timeOpen \
+    --target_cols close \
+    --train_start_year 2017 \
+    --test_start_year 2023 \
+    --prediction_length 30 \
+    --context_length 30 \
+    --epochs 100 \
+    --num_batches 64 \
+    --num_parallel_samples 1000 \
+    --is_pre_scaling True \
