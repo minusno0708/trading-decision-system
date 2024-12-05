@@ -16,19 +16,25 @@ class Model:
             freq: str = "D",
             epochs: int = 100,
             num_parallel_samples: int = 1000,
-            model_name="deepar",
-            model_type="torch"
+            target_dim: int = 1,
         ):
-        self.context_length = context_length
-        self.prediction_length = prediction_length
+        self.feature_second = False
+
+        if self.feature_second:
+            self.input_length = context_length
+            self.output_length = prediction_length
+        else:
+            self.input_length = target_dim
+            self.output_length = target_dim
+
         self.freq = freq
         self.epochs = epochs
         self.num_parallel_samples = num_parallel_samples
         self.is_scaling = False
         
         self.model = Estimator(
-            input_size=self.context_length,
-            output_size=self.prediction_length,
+            input_size=self.input_length,
+            output_size=self.output_length,
         )
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -38,8 +44,11 @@ class Model:
 
     def permute_dim(self, x):
         # 元の次元 [batch_size, feature_size, time_step]
-        # 変換後 [batch_size, time_step, feature_size]
-        return x.permute(0, 1, 2)
+        if self.feature_second:
+            return x.permute(0, 1, 2)
+        else:
+            # 変換後 [batch_size, time_step, feature_size]
+            return x.permute(0, 2, 1)
 
     def scaling(self, x):
         scale = x.mean(dim=2, keepdim=True)
