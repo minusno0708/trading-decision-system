@@ -58,7 +58,8 @@ class DataLoader:
         # 値を標準化
         if self.scaler_flag:
             for col in self.target_cols:
-                df_row[col] = self.scaler[col].fit_transform(df_row[col].values.reshape(-1, 1))
+                self.scaler[col].fit(df_row[df_row.index < self.test_start_date][col].values.reshape(-1, 1))
+                df_row[col] = self.scaler[col].transform(df_row[col].values.reshape(-1, 1))
 
         # データを分割
         train_data = df_row[df_row.index < self.test_start_date]
