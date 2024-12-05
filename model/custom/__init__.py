@@ -30,7 +30,7 @@ class Model:
         self.freq = freq
         self.epochs = epochs
         self.num_parallel_samples = num_parallel_samples
-        self.is_scaling = False
+        self.is_scaling = True
         
         self.model = Estimator(
             input_size=self.input_length,
@@ -51,7 +51,10 @@ class Model:
             return x.permute(0, 2, 1)
 
     def scaling(self, x):
-        scale = x.mean(dim=2, keepdim=True)
+        if self.feature_second:
+            scale = x.mean(dim=2, keepdim=True)
+        else:
+            scale = x.mean(dim=1, keepdim=True)
         x = x / scale
 
         return x, scale
