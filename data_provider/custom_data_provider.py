@@ -10,22 +10,23 @@ class CustomDataset(Dataset):
     def __init__(self, data, time, context_length, prediction_length, batch_size):
         self.data = data
         self.time_str = time.astype(str)
-        self.time_feature = self.convert_time(time)
+        self.time_feature = self.time_to_feature(time)
         self.context_length = context_length
         self.prediction_length = prediction_length
         self.batch_size = batch_size
 
 
-    def convert_time(self, time):
+    def time_to_feature(self, time):
         dt = time.astype("M8[ms]").astype(datetime.datetime)
 
         time_feature = []
 
         for d in dt:
             time_feature.append([
-                d.year / 2100,
-                (d.month - 1) / 11,
-                (d.day - 1) / 30,
+                d.year / 2100, # year
+                (d.month - 1) / 11, # month
+                (d.day - 1) / 30, # day of month
+                d.weekday() / 6, # day of week
             ])
 
         return time_feature
