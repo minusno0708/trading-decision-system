@@ -36,8 +36,8 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         start_date = self.time_str[idx+self.context_length]
-        input_x = torch.tensor([self.data[idx:idx+self.context_length]]).float()
-        target_x = torch.tensor([self.data[idx+self.context_length:idx+self.context_length+self.prediction_length]]).float()
+        input_x = torch.tensor(np.array([self.data[idx:idx+self.context_length]])).float()
+        target_x = torch.tensor(np.array([self.data[idx+self.context_length:idx+self.context_length+self.prediction_length]])).float()
 
         time_feature = torch.tensor(self.time_feature[idx+self.context_length:idx+self.context_length+self.prediction_length]).float()
 
