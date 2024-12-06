@@ -88,6 +88,7 @@ def main(
     plt.legend()
 
     plt.savefig(f"{output_path}/images/{exp_name}/loss_{seed}.png")
+    plt.close(fig)
 
     print("Forecast Train Data")
     logger.log("Forecast Train Data")
@@ -132,6 +133,7 @@ def main(
             plt.legend()
             
             plt.savefig(f"{output_path}/images/{exp_name}/train_{i}_{seed}.png")
+            plt.close(fig)
 
     print("End Train Forecasting")
     logger.log("End Train Forecasting")
@@ -180,6 +182,7 @@ def main(
             plt.legend()
 
             plt.savefig(f"{output_path}/images/{exp_name}/test_{i}_{seed}.png")
+            plt.close(fig)
 
     print("End Test Forecasting")
     logger.log("End Test Forecasting")
