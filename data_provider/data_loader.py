@@ -27,10 +27,13 @@ class DataLoader:
         self.train_start_date = train_start_date
         self.test_start_date = test_start_date
         self.scaler_flag = scaler_flag
+        self.nums_moving_average = [5, 10, 30]
 
         self.scaler = {}
         for col in self.target_cols:
             self.scaler[col] = StandardScaler()
+
+        self.extention_cols = []
 
         self.load()
 
@@ -52,6 +55,13 @@ class DataLoader:
         df_row = df_row.sort_values(self.index_col)
         df_row = df_row.set_index(self.index_col)
 
+        # 移動平均を追加
+        for num in self.nums_moving_average:
+            for col in self.target_cols:
+                extention_name = f"{col}_mov_line_{num}"
+                df_row[extention_name] = df_row[col].rolling(window=num).mean()
+                self.extention_cols.append(extention_name)
+
         # データの範囲を選択
         df_row = df_row[df_row.index >= self.train_start_date]
 
@@ -60,6 +70,9 @@ class DataLoader:
             for col in self.target_cols:
                 self.scaler[col].fit(df_row[df_row.index < self.test_start_date][col].values.reshape(-1, 1))
                 df_row[col] = self.scaler[col].transform(df_row[col].values.reshape(-1, 1))
+
+                for extention_name in self.extention_cols:
+                    df_row[extention_name] = self.scaler[col].transform(df_row[extention_name].values.reshape(-1, 1))
 
         # データを分割
         train_data = df_row[df_row.index < self.test_start_date]

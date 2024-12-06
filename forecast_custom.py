@@ -84,8 +84,8 @@ def main(
 
     loss_arr = np.array([])
 
-    for i, (start_date, input_x, target_x, time_feature) in enumerate(data_loader.train_dataset(batch_size=1, is_shuffle=False)):
-        forecasts, loss = model.make_evaluation_predictions(input_x, target_x)
+    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.train_dataset(batch_size=1, is_shuffle=False)):
+        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
         loss_arr = np.append(loss_arr, loss)
 
         if i % 100 == 0:
@@ -134,8 +134,8 @@ def main(
 
     loss_arr = np.array([])
 
-    for i, (start_date, input_x, target_x, time_feature) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
-        forecasts, loss = model.make_evaluation_predictions(input_x, target_x)
+    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
+        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
         loss_arr = np.append(loss_arr, loss)
 
         if i % 100 == 0:

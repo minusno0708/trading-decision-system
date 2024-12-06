@@ -24,15 +24,20 @@ class Model:
         self.add_time_features = True
         self.num_time_features = 4
 
+        self.add_extention_features = True
+        self.num_extention_features = 3
+
         if self.feature_second:
             self.input_length = context_length
             self.output_length = prediction_length
         else:
-            if self.add_time_features:
-                self.input_length = target_dim + self.num_time_features
-            else:
-                self.input_length = target_dim
+            self.input_length = target_dim
             self.output_length = target_dim
+
+            if self.add_time_features:
+                self.input_length += self.num_time_features
+            if self.add_extention_features:
+                self.input_length += self.num_extention_features
 
         self.freq = freq
         self.epochs = epochs
@@ -81,20 +86,24 @@ class Model:
             self.model.train()
 
             train_loss_per_epoch = np.array([])
-            for i, (start_date, input_x, target_x, time_feature) in enumerate(dataset):
+            for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(dataset):
                 optimizer.zero_grad()
                 batch_size = input_x.shape[0]
                 hidden = self.model.init_hidden(batch_size)
 
                 input_x = self.permute_dim(input_x).to(self.device)
                 target_x = self.permute_dim(target_x).to(self.device)
-                time_feature = time_feature.to(self.device)
+                time_features = time_features.to(self.device)
+                extention_features = extention_features.to(self.device)
 
                 if self.is_scaling:
                     input_x, scale = self.scaling(input_x)
 
                 if self.add_time_features:
-                    input_x = torch.cat([input_x, time_feature], dim=2)
+                    input_x = torch.cat([input_x, time_features], dim=2)
+
+                if self.add_extention_features:
+                    input_x = torch.cat([input_x, extention_features], dim=2)
 
                 mean, var = self.model(input_x, hidden)
 
@@ -117,19 +126,23 @@ class Model:
 
                 val_loss_per_epoch = np.array([])
                 with torch.no_grad():
-                    for i, (start_date, input_x, target_x, time_feature) in enumerate(val_dataset):
+                    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(val_dataset):
                         batch_size = input_x.shape[0]
                         hidden = self.model.init_hidden(batch_size)
 
                         input_x = self.permute_dim(input_x).to(self.device)
                         target_x = self.permute_dim(target_x).to(self.device)
-                        time_feature = time_feature.to(self.device)
+                        time_features = time_features.to(self.device)
+                        extention_features = extention_features.to(self.device)
 
                         if self.is_scaling:
                             input_x, scale = self.scaling(input_x)
 
                         if self.add_time_features:
-                            input_x = torch.cat([input_x, time_feature], dim=2)
+                            input_x = torch.cat([input_x, time_features], dim=2)
+
+                        if self.add_extention_features:
+                            input_x = torch.cat([input_x, extention_features], dim=2)
 
                         mean, var = self.model(input_x, hidden)
 
@@ -148,17 +161,22 @@ class Model:
 
         return train_loss, val_loss
 
-    def forecast(self, input_x: torch.tensor):
+    def forecast(self, input_x: torch.tensor, time_features: torch.tensor, extention_features: torch.tensor):
         self.model.eval()
 
         input_x = self.permute_dim(input_x).to(self.device)
+        time_features = time_features.to(self.device)
+        extention_features = extention_features.to(self.device)
 
         with torch.no_grad():
             if self.is_scaling:
                 input_x, scale = self.scaling(input_x)
 
             if self.add_time_features:
-                input_x = torch.cat([input_x, time_feature], dim=2)
+                input_x = torch.cat([input_x, time_features], dim=2)
+
+            if self.add_extention_features:
+                input_x = torch.cat([input_x, extention_features], dim=2)
 
             mean, var = self.model(input_x)
 
@@ -172,18 +190,24 @@ class Model:
         
         return output
 
-    def make_evaluation_predictions(self, input_x: torch.tensor, target_x: torch.tensor):
+    def make_evaluation_predictions(self, input_x: torch.tensor, target_x: torch.tensor, time_features: torch.tensor, extention_features: torch.tensor):
         self.model.eval()
 
         input_x = self.permute_dim(input_x).to(self.device)
         target_x = self.permute_dim(target_x).to(self.device)
+
+        time_features = time_features.to(self.device)
+        extention_features = extention_features.to(self.device)
 
         with torch.no_grad():
             if self.is_scaling:
                 input_x, scale = self.scaling(input_x)
 
             if self.add_time_features:
-                input_x = torch.cat([input_x, time_feature], dim=2)
+                input_x = torch.cat([input_x, time_features], dim=2)
+
+            if self.add_extention_features:
+                input_x = torch.cat([input_x, extention_features], dim=2)
 
             mean, var = self.model(input_x)
 
