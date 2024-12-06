@@ -192,6 +192,13 @@ def main(
 
     logger.log("End Self Forecasting")
 
+def str2bool(v):
+    if v == "True":
+        return True
+    elif v == "False":
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -214,11 +221,11 @@ if __name__ == "__main__":
     parser.add_argument("--num_batches", type=int, default=64)
     parser.add_argument("--num_parallel_samples", type=int, default=1000)
 
-    parser.add_argument("--is_pre_scaling", type=bool, default=True)
+    parser.add_argument("--is_pre_scaling", type=str2bool, default=True)
 
-    parser.add_argument("--is_model_scaling", type=bool, default=False)
-    parser.add_argument("--add_time_features", type=bool, default=False)
-    parser.add_argument("--add_extention_features", type=bool, default=False)
+    parser.add_argument("--is_model_scaling", type=str2bool, default=False)
+    parser.add_argument("--add_time_features", type=str2bool, default=False)
+    parser.add_argument("--add_extention_features", type=str2bool, default=False)
 
     args = parser.parse_args()
 
