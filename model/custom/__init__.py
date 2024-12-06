@@ -18,19 +18,25 @@ class Model:
             num_parallel_samples: int = 1000,
             target_dim: int = 1,
         ):
+        self.is_scaling = False
         self.feature_second = False
+
+        self.add_time_features = True
+        self.num_time_features = 4
 
         if self.feature_second:
             self.input_length = context_length
             self.output_length = prediction_length
         else:
-            self.input_length = target_dim
+            if self.add_time_features:
+                self.input_length = target_dim + self.num_time_features
+            else:
+                self.input_length = target_dim
             self.output_length = target_dim
 
         self.freq = freq
         self.epochs = epochs
         self.num_parallel_samples = num_parallel_samples
-        self.is_scaling = True
         
         self.model = Estimator(
             input_size=self.input_length,
@@ -87,6 +93,9 @@ class Model:
                 if self.is_scaling:
                     input_x, scale = self.scaling(input_x)
 
+                if self.add_time_features:
+                    input_x = torch.cat([input_x, time_feature], dim=2)
+
                 mean, var = self.model(input_x, hidden)
 
                 if self.is_scaling:
@@ -119,6 +128,9 @@ class Model:
                         if self.is_scaling:
                             input_x, scale = self.scaling(input_x)
 
+                        if self.add_time_features:
+                            input_x = torch.cat([input_x, time_feature], dim=2)
+
                         mean, var = self.model(input_x, hidden)
 
                         if self.is_scaling:
@@ -145,6 +157,9 @@ class Model:
             if self.is_scaling:
                 input_x, scale = self.scaling(input_x)
 
+            if self.add_time_features:
+                input_x = torch.cat([input_x, time_feature], dim=2)
+
             mean, var = self.model(input_x)
 
             if self.is_scaling:
@@ -166,6 +181,9 @@ class Model:
         with torch.no_grad():
             if self.is_scaling:
                 input_x, scale = self.scaling(input_x)
+
+            if self.add_time_features:
+                input_x = torch.cat([input_x, time_feature], dim=2)
 
             mean, var = self.model(input_x)
 
