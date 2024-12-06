@@ -17,14 +17,17 @@ class Model:
             epochs: int = 100,
             num_parallel_samples: int = 1000,
             target_dim: int = 1,
+            is_scaling: bool = False,
+            add_time_features: bool = True,
+            add_extention_features: bool = True
         ):
-        self.is_scaling = False
+        self.is_scaling = is_scaling
         self.feature_second = False
 
-        self.add_time_features = True
+        self.add_time_features = add_time_features
         self.num_time_features = 4
 
-        self.add_extention_features = True
+        self.add_extention_features = add_extention_features
         self.num_extention_features = 3
 
         if self.feature_second:
@@ -86,6 +89,9 @@ class Model:
             self.model.train()
 
             train_loss_per_epoch = np.array([])
+            
+            minimal_val_loss = {"loss": np.inf, "epoch": 0}
+
             for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(dataset):
                 optimizer.zero_grad()
                 batch_size = input_x.shape[0]
@@ -151,6 +157,10 @@ class Model:
                         
                         loss = self.criterion(mean, target_x, var)
                         val_loss_per_epoch = np.append(val_loss_per_epoch, loss.item())
+
+                        if loss.item() < minimal_val_loss["loss"]:
+                            minimal_val_loss["loss"] = loss.item()
+                            minimal_val_loss["epoch"] = epoch
             
                 loss_mean = np.mean(val_loss_per_epoch)
                 val_loss.append(loss_mean)
@@ -159,7 +169,7 @@ class Model:
             else:
                 print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}')
 
-        return train_loss, val_loss
+        return train_loss, val_loss, minimal_val_loss
 
     def forecast(self, input_x: torch.tensor, time_features: torch.tensor, extention_features: torch.tensor):
         self.model.eval()

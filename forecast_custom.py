@@ -33,6 +33,9 @@ def main(
     num_batches,
     num_parallel_samples,
     is_pre_scaling,
+    is_model_scaling,
+    add_time_features,
+    add_extention_features
 ):
 
     logger = Logger(exp_name, f"{output_path}/logs")
@@ -58,17 +61,24 @@ def main(
         freq="D",
         epochs=epochs,
         num_parallel_samples=num_parallel_samples,
+        target_dim=len(target_cols),
+        is_scaling=is_model_scaling,
+        add_time_features=add_time_features,
+        add_extention_features=add_extention_features,
     )
 
     evaluator = Evaluator()
 
-    train_loss, val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=True), data_loader.test_dataset(batch_size=1, is_shuffle=False))
+    train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=True), data_loader.test_dataset(batch_size=1, is_shuffle=False))
 
     logger.log("Train Loss")
     logger.log(train_loss)
 
     logger.log("Val Loss")
     logger.log(val_loss)
+
+    logger.log("Minimal Val Loss")
+    logger.log(f"Epoch: {minimal_val_loss['epoch']}, Loss: {minimal_val_loss['loss']}")
 
     fig, ax = plt.subplots()
 
@@ -84,8 +94,8 @@ def main(
 
     loss_arr = np.array([])
 
-    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.train_dataset(batch_size=1, is_shuffle=False)):
-        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
+    for i, (start_date, input_x, target_x, time_featuress, extention_featuress) in enumerate(data_loader.train_dataset(batch_size=1, is_shuffle=False)):
+        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_featuress, extention_featuress)
         loss_arr = np.append(loss_arr, loss)
 
         if i % 100 == 0:
@@ -134,8 +144,8 @@ def main(
 
     loss_arr = np.array([])
 
-    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
-        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
+    for i, (start_date, input_x, target_x, time_featuress, extention_featuress) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
+        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_featuress, extention_featuress)
         loss_arr = np.append(loss_arr, loss)
 
         if i % 100 == 0:
@@ -203,6 +213,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--is_pre_scaling", type=bool, default=True)
 
+    parser.add_argument("--is_model_scaling", type=bool, default=False)
+    parser.add_argument("--add_time_features", type=bool, default=False)
+    parser.add_argument("--add_extention_features", type=bool, default=False)
+
     args = parser.parse_args()
 
     seed = args.seed
@@ -232,4 +246,7 @@ if __name__ == "__main__":
         num_batches=args.num_batches,
         num_parallel_samples=args.num_parallel_samples,
         is_pre_scaling=args.is_pre_scaling,
+        is_model_scaling=args.is_model_scaling,
+        add_time_features=args.add_time_features,
+        add_extention_features=args.add_extention_features,
     )
