@@ -69,13 +69,14 @@ class Model:
             scale = x.mean(dim=2, keepdim=True)
         else:
             scale = x.mean(dim=1, keepdim=True)
+
         x = x / scale
 
         return x, scale
 
     def rescaling(self, mean, var, scale):
         mean = mean * scale
-        var = var * scale ** 2
+        var = (torch.sqrt(var) * scale) ** 2
 
         return mean, var
 
