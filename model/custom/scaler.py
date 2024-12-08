@@ -1,24 +1,58 @@
+import torch
+
 class Scaler:
-    def __init__(self, kind="simple", feature_second=False):
-        self.kind = kind
+    def __init__(self, name="mean", feature_second=False):
+        self.name = name
         self.feature_second = feature_second
 
-    def fit_transform(self, x):
         if self.feature_second:
-            scale = x.mean(dim=2, keepdim=True)
+            self.target_dim = 2
         else:
-            scale = x.mean(dim=1, keepdim=True)
+            self.target_dim = 1
 
-        x = x / scale
+    def fit(self, x):
+        if self.name == "mean":
+            scale = x.mean(dim=self.target_dim, keepdim=True)
+        elif self.name == "abs_mean":
+            scale = x.mean(dim=self.target_dim, keepdim=True).abs()
+            scale = scale + 1
+        elif self.name == "const":
+            scale_num = 1
 
-        return x, scale
+            batch_size = x.size(0)
+            device = x.device
+
+            scale = torch.ones(batch_size, 1, 1) * scale_num
+            scale = scale.to(device)
+        elif self.name == "standard":
+            mean = x.mean(dim=self.target_dim, keepdim=True)
+            std = x.std(dim=self.target_dim, keepdim=True)
+
+            scale = (mean, std)
+        else:
+            raise ValueError("Invalid scaler name")
+
+        return scale
 
     def transform(self, x, scale):
-        x = x / scale
+        if self.name == "standard":
+            x = (x - scale[0]) / scale[1]
+        else:
+            x = x / scale
 
         return x
 
+    def fit_transform(self, x):
+        scale = self.fit(x)
+
+        x = self.transform(x, scale)
+
+        return x, scale
+
     def invert_transform(self, x, scale):
-        x = x * scale
+        if self.name == "simple":
+            x = x * scale
+        elif self.name == "standard":
+            x = x * scale[1] + scale[0]
 
         return x
