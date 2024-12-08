@@ -43,6 +43,9 @@ class Model:
             if self.add_extention_features:
                 self.input_length += self.num_extention_features
 
+        self.enable_early_stopping = False
+        self.early_stopping_delta = 0.01
+
         self.freq = freq
         self.epochs = epochs
         self.num_parallel_samples = num_parallel_samples
@@ -57,7 +60,7 @@ class Model:
 
         self.criterion = nn.GaussianNLLLoss()
 
-        self.scaler = Scaler("simple", self.feature_second)
+        self.scaler = Scaler("abs_mean", self.feature_second)
 
     def permute_dim(self, x):
         # 元の次元 [batch_size, feature_size, time_step]
@@ -73,12 +76,12 @@ class Model:
         train_loss = []
         val_loss = []
 
+        minimal_val_loss = {"loss": np.inf, "epoch": 0}
+
         for epoch in range(self.epochs):
             self.model.train()
 
             train_loss_per_epoch = np.array([])
-            
-            minimal_val_loss = {"loss": np.inf, "epoch": 0}
 
             for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(dataset):
                 optimizer.zero_grad()
@@ -147,13 +150,18 @@ class Model:
                         
                         loss = self.criterion(mean, target_x, var)
                         val_loss_per_epoch = np.append(val_loss_per_epoch, loss.item())
-
-                        if loss.item() < minimal_val_loss["loss"]:
-                            minimal_val_loss["loss"] = loss.item()
-                            minimal_val_loss["epoch"] = epoch
             
                 loss_mean = np.mean(val_loss_per_epoch)
                 val_loss.append(loss_mean)
+
+                if loss_mean < minimal_val_loss["loss"]:
+                    minimal_val_loss["loss"] = loss_mean
+                    minimal_val_loss["epoch"] = epoch
+                else:
+                    if self.enable_early_stopping:
+                        if loss_mean - minimal_val_loss["loss"] > self.early_stopping_delta:
+                            print(f"early stopping: epoch {epoch+1}")
+                            break
 
                 print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}, val_loss: {val_loss[-1]:.4f}')
             else:
