@@ -65,18 +65,20 @@ class DataLoader:
         # データの範囲を選択
         df_row = df_row[df_row.index >= self.train_start_date]
 
+        # データを分割
+        train_data = df_row[df_row.index < self.test_start_date].copy()
+        test_data = df_row[df_row.index >= self.test_start_date - datetime.timedelta(days=self.prediction_length)].copy()
+
         # 値を標準化
         if self.scaler_flag:
             for col in self.target_cols:
-                self.scaler[col].fit(df_row[df_row.index < self.test_start_date][col].values.reshape(-1, 1))
-                df_row[col] = self.scaler[col].transform(df_row[col].values.reshape(-1, 1))
+                self.scaler[col].fit(train_data[col].values.reshape(-1, 1))
+                train_data[col] = self.scaler[col].transform(train_data[col].values.reshape(-1, 1))
+                test_data[col] = self.scaler[col].transform(test_data[col].values.reshape(-1, 1))
 
                 for extention_name in self.extention_cols:
-                    df_row[extention_name] = self.scaler[col].transform(df_row[extention_name].values.reshape(-1, 1))
-
-        # データを分割
-        train_data = df_row[df_row.index < self.test_start_date]
-        test_data = df_row[df_row.index >= self.test_start_date - datetime.timedelta(days=self.prediction_length)]
+                    train_data[extention_name] = self.scaler[col].transform(train_data[extention_name].values.reshape(-1, 1))
+                    test_data[extention_name] = self.scaler[col].transform(test_data[extention_name].values.reshape(-1, 1))
 
         self.train = train_data
         self.test = test_data 
