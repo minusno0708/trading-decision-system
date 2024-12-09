@@ -8,8 +8,10 @@ do
         --data_path dataset/btc.csv \
         --index_col timeOpen \
         --target_cols close \
-        --train_start_year 2019 \
-        --test_start_year 2023 \
+        --train_start_date "2019-01-01" \
+        --train_end_date "2022-12-31" \
+        --test_start_date "2023-01-01" \
+        --test_end_date "2023-12-31" \
         --prediction_length 30 \
         --context_length 30 \
         --epochs 350 \

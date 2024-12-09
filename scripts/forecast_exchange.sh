@@ -8,8 +8,10 @@ do
         --data_path dataset/usd_jpy.csv \
         --index_col Date \
         --target_cols Price \
-        --train_start_year 1972 \
-        --test_start_year 2023 \
+        --train_start_date "1972-01-01" \
+        --train_end_date "2022-12-31" \
+        --test_start_date "2023-01-01" \
+        --test_end_date "2023-12-31" \
         --prediction_length 30 \
         --context_length 30 \
         --epochs 350 \

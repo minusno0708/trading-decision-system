@@ -15,7 +15,9 @@ class DataLoader:
         context_length: int,
         freq: str = "D",
         train_start_date: datetime.datetime = "2000-01-01",
+        train_end_date: datetime.datetime = None,
         test_start_date: datetime.datetime = "2023-01-01",
+        test_end_date: datetime.datetime = None,
         scaler_flag: bool = True,
     ):
         self.file_path = file_path
@@ -24,8 +26,18 @@ class DataLoader:
         self.prediction_length = prediction_length
         self.context_length = context_length
         self.freq = freq
+
         self.train_start_date = train_start_date
+        if train_end_date is None:
+            train_end_date = test_start_date - datetime.timedelta(days=1)
+        else:
+            self.train_end_date = train_end_date
         self.test_start_date = test_start_date
+        if test_end_date is None:
+            test_end_date = datetime.datetime.now()
+        else:
+            self.test_end_date = test_end_date
+
         self.scaler_flag = scaler_flag
         self.nums_moving_average = [5, 25, 75]
 
@@ -62,12 +74,9 @@ class DataLoader:
                 df_row[extention_name] = df_row[col].rolling(window=num).mean()
                 self.extention_cols.append(extention_name)
 
-        # データの範囲を選択
-        df_row = df_row[df_row.index >= self.train_start_date]
-
         # データを分割
-        train_data = df_row[df_row.index < self.test_start_date].copy()
-        test_data = df_row[df_row.index >= self.test_start_date - datetime.timedelta(days=self.prediction_length)].copy()
+        train_data = df_row[(df_row.index >= self.train_start_date) & (df_row.index <= self.train_end_date)].copy()
+        test_data = df_row[(df_row.index >= self.test_start_date - datetime.timedelta(days=self.prediction_length)) & (df_row.index <= self.test_end_date)].copy()
 
         # 値を標準化
         if self.scaler_flag:

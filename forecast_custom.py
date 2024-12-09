@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 
 import random
-import datetime
+from datetime import datetime
 
 from data_provider.data_loader import DataLoader
 from data_provider.custom_data_provider import CustomDataProvider
@@ -25,8 +25,10 @@ def main(
     data_path,
     index_col,
     target_cols,
-    train_start_year,
-    test_start_year,
+    train_start_date,
+    train_end_date,
+    test_start_date,
+    test_end_date,
     prediction_length,
     context_length,
     epochs,
@@ -50,8 +52,10 @@ def main(
         prediction_length=prediction_length,
         context_length=context_length,
         freq="D",
-        train_start_date=datetime.datetime(train_start_year, 1, 1),
-        test_start_date=datetime.datetime(test_start_year, 1, 1),
+        train_start_date=train_start_date,
+        train_end_date=train_end_date,
+        test_start_date=test_start_date,
+        test_end_date=test_end_date,
         scaler_flag=is_pre_scaling,
     )
 
@@ -199,6 +203,9 @@ def int2bool(v):
     else:
         return True
 
+def str2datetime(v):
+    return datetime.strptime(v, "%Y-%m-%d")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -210,8 +217,10 @@ if __name__ == "__main__":
     parser.add_argument("--index_col", type=str, default="timeOpen")
     parser.add_argument("--target_cols", type=str, default=["close"])
 
-    parser.add_argument("--train_start_year", type=int, default=2000)
-    parser.add_argument("--test_start_year", type=int, default=2023)
+    parser.add_argument("--train_start_date", type=str2datetime, default="2000-01-01")
+    parser.add_argument("--train_end_date", type=str2datetime, default="2022-12-31")
+    parser.add_argument("--test_start_date", type=str2datetime, default="2023-01-01")
+    parser.add_argument("--test_end_date", type=str2datetime, default="2023-12-31")
 
     parser.add_argument("--prediction_length", type=int, default=30)
     parser.add_argument("--context_length", type=int, default=30)
@@ -247,8 +256,10 @@ if __name__ == "__main__":
         data_path=args.data_path,
         index_col=args.index_col,
         target_cols=args.target_cols.split(","),
-        train_start_year=args.train_start_year,
-        test_start_year=args.test_start_year,
+        train_start_date=args.train_start_date,
+        train_end_date=args.train_end_date,
+        test_start_date=args.test_start_date,
+        test_end_date=args.test_end_date,
         prediction_length=args.prediction_length,
         context_length=args.context_length,
         epochs=args.epochs,
