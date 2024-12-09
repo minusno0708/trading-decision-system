@@ -67,8 +67,8 @@ class Model:
         else:
             raise ValueError(f"{model_name} is invalid model type")
 
-    def train(self, dataset: ListDataset):
-        self.model = self.model.train(dataset)
+    def train(self, dataset: ListDataset, validation_dataset: ListDataset = None):
+        self.model = self.model.train(dataset, validation_dataset)
 
     def forecast(self, dataset: ListDataset):
         return list(self.model.predict(dataset))
