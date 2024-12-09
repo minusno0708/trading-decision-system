@@ -245,6 +245,12 @@ if __name__ == "__main__":
     if not os.path.exists(f"{args.output_path}/logs"):
         os.makedirs(f"{args.output_path}/logs")
 
+    if (args.train_end_date - args.train_start_date).days < args.context_length + args.prediction_length:
+        raise ValueError(f"train data must be longer than {args.context_length + args.prediction_length}: {args.train_end_date - args.train_start_date}")
+
+    if (args.test_end_date - args.test_start_date).days < args.prediction_length:
+        raise ValueError(f"test data must be longer than {args.prediction_length}: {args.test_end_date - args.test_start_date}")
+
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
