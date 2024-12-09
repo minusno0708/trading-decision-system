@@ -13,12 +13,12 @@ class DataLoader:
         target_cols: list,
         prediction_length: int,
         context_length: int,
-        freq: str = "D",
-        train_start_date: datetime.datetime = "2000-01-01",
-        train_end_date: datetime.datetime = None,
-        test_start_date: datetime.datetime = "2023-01-01",
-        test_end_date: datetime.datetime = None,
-        scaler_flag: bool = True,
+        freq: str,
+        train_start_date: datetime.datetime,
+        train_end_date: datetime.datetime,
+        test_start_date: datetime.datetime,
+        test_end_date: datetime.datetime,
+        scaler_flag: bool,
     ):
         self.file_path = file_path
         self.index_col = index_col
@@ -26,18 +26,10 @@ class DataLoader:
         self.prediction_length = prediction_length
         self.context_length = context_length
         self.freq = freq
-
         self.train_start_date = train_start_date
-        if train_end_date is None:
-            train_end_date = test_start_date - datetime.timedelta(days=1)
-        else:
-            self.train_end_date = train_end_date
+        self.train_end_date = train_end_date
         self.test_start_date = test_start_date
-        if test_end_date is None:
-            test_end_date = datetime.datetime.now()
-        else:
-            self.test_end_date = test_end_date
-
+        self.test_end_date = test_end_date
         self.scaler_flag = scaler_flag
         self.nums_moving_average = [5, 25, 75]
 
