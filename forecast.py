@@ -139,7 +139,9 @@ def main(
         context_length=input_length,
         freq="D",
         train_start_date=datetime.datetime(train_start_year, 1, 1),
+        train_end_date=datetime.datetime(test_start_year-1, 12, 31),
         test_start_date=datetime.datetime(test_start_year, 1, 1),
+        test_end_date=datetime.datetime(2024, 12, 31),
         scaler_flag=is_pre_scaling
     )
 
@@ -184,7 +186,7 @@ def main(
         context_length=input_length,
         prediction_length=output_length,
         freq="D",
-        epochs=1000,
+        epochs=100,
         num_parallel_samples=1000,
         model_name=model_name,
         model_type=model_type
@@ -332,7 +334,7 @@ def main(
                     correct_data=data_loader.listdata_values(correct_data),
                     graph_name="test_" + experiment_name,
                     graph_num=i,
-                    ylim=(data_loader.min("train") - 0.5, data_loader.max("train") + 0.5)
+                    ylim=(data_loader.min("test") - 0.5, data_loader.max("test") + 0.5)
                 )
 
 
@@ -342,12 +344,12 @@ if __name__ == "__main__":
     for s in range(5):
 
         main(
-            experiment_name=f"exp1000_sameself_{s}",
+            experiment_name=f"exp1210_{s}",
             model_name=exp[0],
             model_type=exp[1],
             input_length=30,
             output_length=30,
-            train_start_year=2017,
+            train_start_year=2019,
             test_start_year=2023,
             seed=s
         )
