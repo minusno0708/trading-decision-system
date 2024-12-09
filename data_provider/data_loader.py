@@ -27,7 +27,7 @@ class DataLoader:
         self.train_start_date = train_start_date
         self.test_start_date = test_start_date
         self.scaler_flag = scaler_flag
-        self.nums_moving_average = [5, 10, 30]
+        self.nums_moving_average = [5, 25, 75]
 
         self.scaler = {}
         for col in self.target_cols:
