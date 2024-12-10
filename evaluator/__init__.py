@@ -1,23 +1,17 @@
 import numpy as np
 
 class Evaluator:
-    def __init__(self, quantiles = [0.1, 0.5, 0.9]):
+    def __init__(self, quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
         self.quantiles = quantiles
 
     def evaluate(self, forecasts, target):
         metrics = {}
 
-        metrics['abs_target_sum'] = self.abs_target_sum(target)
-        metrics['abs_target_mean'] = self.abs_target_mean(target)
-
-        metrics['rmse'] = self.rmse(target, forecasts.values.mean)
-
-        metrics['nrmse'] = self.nrmse(metrics['rmse'], metrics['abs_target_mean'])
+        metrics['rmse'] = self.rmse(target, forecasts.mean)
 
         for q in self.quantiles:
-            metrics[f'quantile_loss[{str(q)}]'] = self.quantile_loss(target, forecasts.values.quantile(q), q)
-            metrics[f'w_quantile_loss[{str(q)}]'] = self.w_quantile_loss(metrics[f'quantile_loss[{str(q)}]'], metrics['abs_target_sum'])
-            metrics[f'coverage[{str(q)}]'] = self.coverage(target, forecasts.values.quantile(q))
+            #metrics[f'quantile_loss[{str(q)}]'] = self.quantile_loss(target, forecasts.quantile(q), q)
+            metrics[f'coverage[{str(q)}]'] = self.coverage(target, forecasts.quantile(q))
 
         return metrics
 
