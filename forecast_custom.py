@@ -73,7 +73,7 @@ def main(
 
     evaluator = Evaluator()
 
-    train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=True), data_loader.test_dataset(batch_size=1, is_shuffle=False))
+    train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=False), data_loader.test_dataset(batch_size=1, is_shuffle=False))
 
     logger.log("Train Loss")
     logger.log(train_loss)
@@ -104,13 +104,18 @@ def main(
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_featuress, extention_featuress)
         loss_arr = np.append(loss_arr, loss)
 
+        forecasts[0].inverse_transform(data_loader.scaler[target_cols[0]])
+        input_x = data_loader.inverse_transform(input_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
+        target_x = data_loader.inverse_transform(target_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
+
+        metrics = evaluator.evaluate(forecasts[0], target_x)
+        print(metrics)
+
         if i % 100 == 0:
             print(f"forecasting {i}th data, loss: {loss}")
             logger.log(f"forecasting {i}th data, loss: {loss}")
 
-            input_x = input_x.detach().numpy().reshape(-1)
-            target_x = target_x.detach().numpy().reshape(-1)
-            true_mean = forecasts[0].distribution["mean"].reshape(-1)
+            #true_mean = forecasts[0].distribution["mean"].reshape(-1)
             samples_mean = forecasts[0].mean
             median = forecasts[0].median
             quantile_10 = forecasts[0].quantile(0.1)
@@ -120,8 +125,8 @@ def main(
 
             ax.plot(range(context_length), input_x, label="input")
             ax.plot(range(context_length, context_length + prediction_length), target_x, label="target")
-            ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
-            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="samples_mean")
+            #ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
+            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="mean")
             ax.plot(range(context_length, context_length + prediction_length), median, label="median")
             ax.fill_between(
                 range(context_length, context_length + prediction_length),
@@ -132,7 +137,7 @@ def main(
 
             ax.set_xticks([])
 
-            plt.ylim(data_loader.min("test") - 0.5, data_loader.max("test") + 0.5)
+            #plt.ylim(data_loader.min("test") - 0.5, data_loader.max("test") + 0.5)
             plt.legend()
 
             plt.savefig(f"{output_path}/images/{exp_name}/test_{i}_{seed}.png")
