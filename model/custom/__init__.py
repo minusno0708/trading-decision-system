@@ -62,6 +62,8 @@ class Model:
 
         self.scaler = Scaler("abs_mean", self.feature_second)
 
+        self.path = "checkpoint.pth"
+
     def permute_dim(self, x):
         # 元の次元 [batch_size, feature_size, time_step]
         if self.feature_second:
@@ -157,6 +159,8 @@ class Model:
                 if loss_mean < minimal_val_loss["loss"]:
                     minimal_val_loss["loss"] = loss_mean
                     minimal_val_loss["epoch"] = epoch
+
+                    self.save()
                 else:
                     if self.enable_early_stopping:
                         if loss_mean - minimal_val_loss["loss"] > self.early_stopping_delta:
@@ -166,6 +170,9 @@ class Model:
                 print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}, val_loss: {val_loss[-1]:.4f}')
             else:
                 print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}')
+
+        self.load()
+        print(f"Load minimal model, epoch: {minimal_val_loss['epoch']}, loss: {minimal_val_loss['loss']}")
 
         return train_loss, val_loss, minimal_val_loss
 
@@ -236,6 +243,14 @@ class Model:
             output.append(ForecastOutput(mean[i], var[i], self.num_parallel_samples))
 
         return output, loss
+
+    def save(self):
+        torch.save(self.model.state_dict(), self.path)
+
+    def load(self):
+        self.model.load_state_dict(torch.load(self.path))
+        self.model.eval()
+        self.model.to(self.device)
     
         
 
