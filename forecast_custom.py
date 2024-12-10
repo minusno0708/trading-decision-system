@@ -29,6 +29,9 @@ def main(
     train_end_date,
     test_start_date,
     test_end_date,
+    train_data_length,
+    test_data_length,
+    split_type,
     prediction_length,
     context_length,
     epochs,
@@ -44,7 +47,6 @@ def main(
     logger.log("Start Self Forecasting, Seed: " + str(seed))
     logger.timestamp()
 
-
     data_loader = CustomDataProvider(
         file_path=data_path,
         index_col=index_col,
@@ -52,12 +54,13 @@ def main(
         prediction_length=prediction_length,
         context_length=context_length,
         freq="D",
-        train_start_date=train_start_date,
-        train_end_date=train_end_date,
-        test_start_date=test_start_date,
-        test_end_date=test_end_date,
         scaler_flag=is_pre_scaling,
     )
+
+    if split_type == "datetime":
+        data_loader.update_date(train_start_date, train_end_date, test_start_date, test_end_date)
+    elif split_type == "index":
+        data_loader.update_date_by_index(test_start_date, train_data_length, test_data_length)
 
     model = Model(
         context_length=context_length,
@@ -111,7 +114,7 @@ def main(
         metrics = evaluator.evaluate(forecasts[0], target_x)
         print(metrics)
 
-        if i % 100 == 0:
+        if i % 1 == 0:
             print(f"forecasting {i}th data, loss: {loss}")
             logger.log(f"forecasting {i}th data, loss: {loss}")
 
@@ -172,10 +175,14 @@ if __name__ == "__main__":
     parser.add_argument("--index_col", type=str, default="timeOpen")
     parser.add_argument("--target_cols", type=str, default=["close"])
 
-    parser.add_argument("--train_start_date", type=str2datetime, default="2000-01-01")
-    parser.add_argument("--train_end_date", type=str2datetime, default="2022-12-31")
-    parser.add_argument("--test_start_date", type=str2datetime, default="2023-01-01")
-    parser.add_argument("--test_end_date", type=str2datetime, default="2023-12-31")
+    parser.add_argument("--train_start_date", type=str2datetime, default=None)
+    parser.add_argument("--train_end_date", type=str2datetime, default=None)
+    parser.add_argument("--test_start_date", type=str2datetime, default=None)
+    parser.add_argument("--test_end_date", type=str2datetime, default=None)
+    
+    parser.add_argument("--train_data_length", type=int, default=60)
+    parser.add_argument("--test_data_length", type=int, default=30)
+    parser.add_argument("--split_type", type=str, default="datetime")
 
     parser.add_argument("--prediction_length", type=int, default=30)
     parser.add_argument("--context_length", type=int, default=30)
@@ -200,11 +207,12 @@ if __name__ == "__main__":
     if not os.path.exists(f"{args.output_path}/logs"):
         os.makedirs(f"{args.output_path}/logs")
 
-    if (args.train_end_date - args.train_start_date).days < args.context_length + args.prediction_length:
-        raise ValueError(f"train data must be longer than {args.context_length + args.prediction_length}: {args.train_end_date - args.train_start_date}")
+    if args.split_type == "datetime":
+        if (args.train_end_date - args.train_start_date).days < args.context_length + args.prediction_length:
+            raise ValueError(f"train data must be longer than {args.context_length + args.prediction_length}: {args.train_end_date - args.train_start_date}")
 
-    if (args.test_end_date - args.test_start_date).days < args.prediction_length:
-        raise ValueError(f"test data must be longer than {args.prediction_length}: {args.test_end_date - args.test_start_date}")
+        if (args.test_end_date - args.test_start_date).days < args.prediction_length:
+            raise ValueError(f"test data must be longer than {args.prediction_length}: {args.test_end_date - args.test_start_date}")
 
     random.seed(seed)
     np.random.seed(seed)
@@ -221,6 +229,9 @@ if __name__ == "__main__":
         train_end_date=args.train_end_date,
         test_start_date=args.test_start_date,
         test_end_date=args.test_end_date,
+        train_data_length=args.train_data_length,
+        test_data_length=args.test_data_length,
+        split_type=args.split_type,
         prediction_length=args.prediction_length,
         context_length=args.context_length,
         epochs=args.epochs,
