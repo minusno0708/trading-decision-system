@@ -29,3 +29,10 @@ class ForecastOutput:
 
     def quantile(self, q):
         return np.quantile(self.samples, q, axis=1)
+
+    def inverse_transform(self, scaler):
+        self.distribution["mean"] = scaler.inverse_transform([self.distribution["mean"]]).reshape(-1)
+        self.distribution["var"] = scaler.inverse_transform([self.distribution["var"]]).reshape(-1)
+        self.samples = scaler.inverse_transform(self.samples)
+        self.mean = scaler.inverse_transform([self.mean]).reshape(-1)
+        self.median = scaler.inverse_transform([self.median]).reshape(-1)
