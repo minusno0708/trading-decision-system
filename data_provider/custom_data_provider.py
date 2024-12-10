@@ -49,10 +49,13 @@ class CustomDataset(Dataset):
         return start_date, input_x, target_x, time_features, extention_features
 
 class CustomDataProvider(SelfDataLoader):
+    def custom_dataset(self, dataset, batch_size):
+        return CustomDataset(dataset, self.target_cols, self.extention_cols, self.context_length, self.prediction_length, batch_size)
+
     def train_dataset(self, batch_size, is_shuffle=True):
-        torch_dataset = CustomDataset(self.train, self.target_cols, self.extention_cols, self.context_length, self.prediction_length, batch_size)
+        torch_dataset = self.custom_dataset(self.train, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
 
     def test_dataset(self, batch_size=1, is_shuffle=False):
-        torch_dataset = CustomDataset(self.test, self.target_cols, self.extention_cols, self.context_length, self.prediction_length, batch_size)
+        torch_dataset = self.custom_dataset(self.test, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
