@@ -103,8 +103,8 @@ class DataLoader:
         self.train = train_data
         self.test = test_data 
 
-        print("train date length: ", len(self.train)-self.context_length)
-        print("test date length: ", len(self.test)-self.context_length)
+        print("train date length: ", len(self.train)-self.context_length-1)
+        print("test date length: ", len(self.test)-self.context_length-1)
 
     def update_date(self, train_start_date, train_end_date, test_start_date, test_end_date):
         self.train_start_date = train_start_date
@@ -119,8 +119,8 @@ class DataLoader:
 
         self.test_start_date = self.date[target_index]
         self.test_end_date = self.date[target_index + test_num]
-        self.train_end_date = self.date[target_index - 1]
-        self.train_start_date = self.date[target_index - train_num - 1]
+        self.train_end_date = self.date[target_index]
+        self.train_start_date = self.date[target_index - train_num]
 
         self.split_dataset()
 
