@@ -84,6 +84,7 @@ def main(
     logger.log("Minimal Val Loss")
     logger.log(f"Epoch: {minimal_val_loss['epoch']}, Loss: {minimal_val_loss['loss']}")
 
+    # ロスの推移をプロット
     fig, ax = plt.subplots()
 
     ax.plot(train_loss, label="train")
@@ -93,57 +94,6 @@ def main(
 
     plt.savefig(f"{output_path}/images/{exp_name}/loss_{seed}.png")
     plt.close(fig)
-
-    print("Forecast Train Data")
-    logger.log("Forecast Train Data")
-
-    loss_arr = np.array([])
-
-    for i, (start_date, input_x, target_x, time_featuress, extention_featuress) in enumerate(data_loader.train_dataset(batch_size=1, is_shuffle=False)):
-        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_featuress, extention_featuress)
-        loss_arr = np.append(loss_arr, loss)
-
-        if i % 100 == 0:
-            #metrics = evaluator.evaluate(forecasts, target_x.numpy().reshape(-1))
-
-            print(f"forecasting {i}th data, loss: {loss}")
-            logger.log(f"forecasting {i}th data, loss: {loss}")
-
-            input_x = input_x.detach().numpy().reshape(-1)
-            target_x = target_x.detach().numpy().reshape(-1)
-            true_mean = forecasts[0].distribution["mean"].reshape(-1)
-            samples_mean = forecasts[0].mean
-            median = forecasts[0].median
-            quantile_10 = forecasts[0].quantile(0.1)
-            quantile_90 = forecasts[0].quantile(0.9)
-
-            fig, ax = plt.subplots()
-
-            ax.plot(range(context_length), input_x, label="input")
-            ax.plot(range(context_length, context_length + prediction_length), target_x, label="target")
-            ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
-            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="samples_mean")
-            ax.plot(range(context_length, context_length + prediction_length), median, label="median")
-            ax.fill_between(
-                range(context_length, context_length + prediction_length),
-                quantile_10,
-                quantile_90,
-                alpha=0.3
-            )
-
-            ax.set_xticks([])
-
-            plt.ylim(data_loader.min("train") - 0.5, data_loader.max("train") + 0.5)
-            plt.legend()
-            
-            plt.savefig(f"{output_path}/images/{exp_name}/train_{i}_{seed}.png")
-            plt.close(fig)
-
-    print("End Train Forecasting")
-    logger.log("End Train Forecasting")
-
-    print("Train Loss:", np.mean(loss_arr))
-    logger.log("Train Loss: " + str(np.mean(loss_arr)))
 
     print("Forecast Test Data")
     logger.log("Forecast Test Data")
