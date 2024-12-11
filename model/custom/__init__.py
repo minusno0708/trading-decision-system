@@ -46,6 +46,8 @@ class Model:
         self.enable_early_stopping = False
         self.early_stopping_delta = 0.01
 
+        self.model_save = True
+
         self.freq = freq
         self.epochs = epochs
         self.num_parallel_samples = num_parallel_samples
@@ -171,8 +173,11 @@ class Model:
             else:
                 print(f'Epoch [{epoch+1}/{self.epochs}], train_Loss: {train_loss[-1]:.4f}')
 
-        self.load()
-        print(f"Load minimal model, epoch: {minimal_val_loss['epoch']}, loss: {minimal_val_loss['loss']}")
+        if self.model_save:
+            self.load()
+            print(f"Load minimal model, epoch: {minimal_val_loss['epoch']}, loss: {minimal_val_loss['loss']}")
+        else:
+            self.model.eval()
 
         return train_loss, val_loss, minimal_val_loss
 
