@@ -99,6 +99,14 @@ class Model:
 
         return mean, var
 
+    def loss_compute(self, mean: torch.tensor, target_x: torch.tensor, var: torch.tensor, scale: torch.tensor):
+        if self.is_scaling:
+            mean, var = self.invert_scaling(mean, var, scale)
+
+        loss = self.criterion(mean, target_x, var)
+
+        return loss, mean, var
+
     def train(self, dataset: torch.utils.data.DataLoader, val_dataset: torch.utils.data.DataLoader = None):
         optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
 
@@ -121,10 +129,8 @@ class Model:
                 
                 mean, var = self.model(input_x, hidden)
 
-                if self.is_scaling:
-                    mean, var = self.invert_scaling(mean, var, scale)
+                loss, mean, var = self.loss_compute(mean, target_x, var, scale)
 
-                loss = self.criterion(mean, target_x, var)
                 train_loss_per_epoch = np.append(train_loss_per_epoch, loss.item())
                 
                 # モデルの更新
@@ -149,10 +155,8 @@ class Model:
                         with torch.no_grad():
                             mean, var = self.model(input_x, hidden)
 
-                        if self.is_scaling:
-                            mean, var = self.invert_scaling(mean, var, scale)
-                        
-                        loss = self.criterion(mean, target_x, var)
+                        loss, mean, var = self.loss_compute(mean, target_x, var, scale)
+
                         val_loss_per_epoch = np.append(val_loss_per_epoch, loss.item())
             
                 loss_mean = np.mean(val_loss_per_epoch)
@@ -189,8 +193,8 @@ class Model:
         with torch.no_grad():
             mean, var = self.model(input_x)
 
-            if self.is_scaling:
-                mean, var = self.invert_scaling(mean, var, scale)
+        if self.is_scaling:
+            mean, var = self.invert_scaling(mean, var, scale)
 
         mean = mean.cpu().numpy()
         var = var.cpu().numpy()
@@ -207,10 +211,7 @@ class Model:
         with torch.no_grad():
             mean, var = self.model(input_x)
 
-        if self.is_scaling:
-            mean, var = self.invert_scaling(mean, var, scale)
-
-        loss = self.criterion(mean, target_x, var)
+        loss, mean, var = self.loss_compute(mean, target_x, var, scale)
 
         mean = self.permute_dim(mean).squeeze(0).cpu().numpy()
         var = self.permute_dim(var).squeeze(0).cpu().numpy()
