@@ -36,7 +36,7 @@ class CustomDataset(Dataset):
         return np.array(time_feature)
 
     def __len__(self):
-        return len(self.data) - self.context_length - self.prediction_length
+        return len(self.data) - self.context_length - self.prediction_length + 1
 
     def __getitem__(self, idx):
         start_date = self.date_str[idx+self.context_length]
