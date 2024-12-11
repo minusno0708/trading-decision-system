@@ -4,17 +4,17 @@ do
     python forecast_custom.py \
         --seed $seed \
         --output_path output/forecast_btc \
-        --exp_name normal_350_1208 \
+        --exp_name point_forecast_1210 \
         --data_path dataset/btc.csv \
         --index_col timeOpen \
         --target_cols close \
-        --train_start_date "2019-01-01" \
-        --train_end_date "2022-12-31" \
-        --test_start_date "2023-01-01" \
-        --test_end_date "2023-12-31" \
+        --test_start_date "2023-08-01" \
+        --train_data_length 60 \
+        --test_data_length 30 \
+        --split_type index \
         --prediction_length 30 \
         --context_length 30 \
-        --epochs 350 \
+        --epochs 300 \
         --num_batches 64 \
         --num_parallel_samples 1000 \
         --is_pre_scaling 1 \
