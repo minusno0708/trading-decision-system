@@ -122,6 +122,8 @@ def main(
             samples_mean = forecasts[0].mean
             median = forecasts[0].median
             quantile_10 = forecasts[0].quantile(0.1)
+            quantile_30 = forecasts[0].quantile(0.3)
+            quantile_70 = forecasts[0].quantile(0.7)
             quantile_90 = forecasts[0].quantile(0.9)
 
             fig, ax = plt.subplots()
@@ -135,7 +137,13 @@ def main(
                 range(context_length, context_length + prediction_length),
                 quantile_10,
                 quantile_90,
-                alpha=0.3
+                alpha=0.3,
+            )
+            ax.fill_between(
+                range(context_length, context_length + prediction_length),
+                quantile_30,
+                quantile_70,
+                alpha=0.5,
             )
 
             ax.set_xticks([])
