@@ -6,11 +6,11 @@ class Evaluator:
 
     def evaluate(self, forecasts, target):
         metrics = {}
-
+        
         metrics['rmse'] = self.rmse(target, forecasts.mean)
 
         for q in self.quantiles:
-            #metrics[f'quantile_loss[{str(q)}]'] = self.quantile_loss(target, forecasts.quantile(q), q)
+            metrics[f'quantile_loss[{str(q)}]'] = self.quantile_loss(target, forecasts.quantile(q), q)
             metrics[f'coverage[{str(q)}]'] = self.coverage(target, forecasts.quantile(q))
 
         return metrics
@@ -20,6 +20,9 @@ class Evaluator:
 
     def abs_target_mean(self, target):
         return np.mean(np.abs(target))
+
+    def mae(self, target, forecast):
+        return np.mean(np.abs(target - forecast))
 
     def rmse(self, target, forecast):
         return np.sqrt(np.mean(np.square((target - forecast))))
