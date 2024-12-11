@@ -103,16 +103,26 @@ def main(
 
     loss_arr = np.array([])
 
-    for i, (start_date, input_x, target_x, time_featuress, extention_featuress) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
-        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_featuress, extention_featuress)
+    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
+        print(start_date)
+        
+        forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
         loss_arr = np.append(loss_arr, loss)
 
-        forecasts[0].inverse_transform(data_loader.scaler[target_cols[0]])
-        input_x = data_loader.inverse_transform(input_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
-        target_x = data_loader.inverse_transform(target_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
+        if is_pre_scaling:
+            forecasts[0].inverse_transform(data_loader.scaler[target_cols[0]])
+            input_x = data_loader.inverse_transform(input_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
+            target_x = data_loader.inverse_transform(target_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
+        else:
+            input_x = input_x.detach().numpy().reshape(-1)
+            target_x = target_x.detach().numpy().reshape(-1)
 
         metrics = evaluator.evaluate(forecasts[0], target_x)
         print(metrics)
+
+        baseline = np.array([input_x[-1]] * prediction_length)
+        baseline_rmse = evaluator.rmse(baseline, target_x)
+        print("Baseline RMSE:", baseline_rmse)
 
         if i % 1 == 0:
             print(f"forecasting {i}th data, loss: {loss}")
