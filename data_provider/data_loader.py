@@ -87,7 +87,7 @@ class DataLoader:
     def split_dataset(self):
         # データを分割
         train_data = self.df_row[(self.df_row.index >= self.train_start_date) & (self.df_row.index <= self.train_end_date)].copy()
-        test_data = self.df_row[(self.df_row.index >= self.test_start_date - datetime.timedelta(days=self.prediction_length)) & (self.df_row.index <= self.test_end_date)].copy()
+        test_data = self.df_row[(self.df_row.index >= self.test_start_date) & (self.df_row.index <= self.test_end_date)].copy()
 
         # 値を標準化
         if self.scaler_flag:
@@ -141,7 +141,7 @@ class DataLoader:
     def update_date_by_index(self, test_start_date, train_num, test_num, val_num=0):
         target_index = self.search_date_index(test_start_date)
 
-        self.test_start_date = self.date[target_index]
+        self.test_start_date = self.date[target_index - self.context_length]
         self.test_end_date = self.date[target_index + test_num - 1]
         self.train_end_date = self.date[target_index - 1]
         self.train_start_date = self.date[target_index - train_num]
