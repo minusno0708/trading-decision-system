@@ -67,7 +67,7 @@ class Model:
         else:
             self.criterion = nn.GaussianNLLLoss()
 
-        self.scaler = Scaler("abs_mean", self.feature_second)
+        self.scaler = Scaler("mean", self.feature_second)
 
         self.path = "checkpoint.pth"
 
@@ -98,15 +98,9 @@ class Model:
 
         return input_x, target_x, scale
 
-    def invert_scaling(self, mean: torch.tensor, var: torch.tensor, scale: torch.tensor):
-        mean = self.scaler.invert_transform(mean, scale)
-        var = self.scaler.invert_transform(torch.sqrt(var), scale) ** 2
-
-        return mean, var
-
     def loss_compute(self, mean: torch.tensor, target_x: torch.tensor, var: torch.tensor, scale: torch.tensor):
         if self.is_scaling:
-            mean, var = self.invert_scaling(mean, var, scale)
+            mean, var = self.scaler.invert_transform(mean, var, scale)
 
         if self.is_scaling and self.add_weight_loss:
             loss = self.criterion(mean, target_x, var)

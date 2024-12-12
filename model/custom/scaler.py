@@ -37,6 +37,8 @@ class Scaler:
     def transform(self, x, scale):
         if self.name == "standard":
             x = (x - scale[0]) / scale[1]
+        elif self.name == "mean":
+            x = x - scale
         else:
             x = x / scale
 
@@ -49,10 +51,14 @@ class Scaler:
 
         return x, scale
 
-    def invert_transform(self, x, scale):
-        if self.name == "simple":
-            x = x * scale
-        elif self.name == "standard":
-            x = x * scale[1] + scale[0]
+    def invert_transform(self, mean, var, scale):
+        if self.name == "standard":
+            mean = mean * scale[1] + scale[0]
+            var = (torch.sqrt(var) * scale[1]) ** 2
+        elif self.name == "mean":
+            mean = mean + scale
+        else:
+            mean = mean * scale
+            var = (torch.sqrt(var) * scale) ** 2
 
-        return x
+        return mean, var
