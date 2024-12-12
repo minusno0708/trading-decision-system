@@ -60,7 +60,12 @@ class Model:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
-        self.criterion = nn.GaussianNLLLoss()
+        self.add_weight_loss = False
+
+        if self.is_scaling and self.add_weight_loss:
+            self.criterion = nn.GaussianNLLLoss(reduction="none")
+        else:
+            self.criterion = nn.GaussianNLLLoss()
 
         self.scaler = Scaler("abs_mean", self.feature_second)
 
@@ -103,7 +108,14 @@ class Model:
         if self.is_scaling:
             mean, var = self.invert_scaling(mean, var, scale)
 
-        loss = self.criterion(mean, target_x, var)
+        if self.is_scaling and self.add_weight_loss:
+            loss = self.criterion(mean, target_x, var)
+
+            loss= loss.mean(dim=1) * scale.squeeze(1)
+
+            loss = loss.mean()
+        else:
+            loss = self.criterion(mean, target_x, var)
 
         return loss, mean, var
 
