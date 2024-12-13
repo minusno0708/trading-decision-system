@@ -54,11 +54,11 @@ class Scaler:
     def invert_transform(self, mean, var, scale):
         if self.name == "standard":
             mean = mean * scale[1] + scale[0]
-            var = (torch.sqrt(var) * scale[1]) ** 2
+            var = var * (scale[1] ** 2)
         elif self.name == "mean":
             mean = mean + scale
         else:
             mean = mean * scale
-            var = (torch.sqrt(var) * scale) ** 2
+            var = var * (scale ** 2)
 
         return mean, var
