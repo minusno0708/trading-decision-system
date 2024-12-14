@@ -107,6 +107,7 @@ def main(
         print(start_date)
         
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
+        
         loss_arr = np.append(loss_arr, loss)
 
         if is_pre_scaling:
@@ -120,9 +121,26 @@ def main(
         metrics = evaluator.evaluate(forecasts[0], target_x)
         print(metrics)
 
-        baseline = np.array([input_x[-1]] * prediction_length)
-        baseline_rmse = evaluator.rmse(baseline, target_x)
-        print("Baseline RMSE:", baseline_rmse)
+        today_line = np.array([input_x[-1]] * prediction_length)
+        today_line_rmse = evaluator.rmse(today_line, target_x)
+        print("TodayLine RMSE:", today_line_rmse.round(2))
+
+        ave_line = np.array([input_x.mean()] * prediction_length)
+        ave_line_rmse = evaluator.rmse(ave_line, target_x)
+        print("AverageLine RMSE:", ave_line_rmse.round(2))
+
+        logger.log(f"Date:{start_date}")
+
+        logger.log(f"学習データ[{train_data_length}]")
+        logger.log(f"RMSE:{metrics['rmse'].round(2)}")
+        logger.log(f"Coverage[0.1]:{metrics['coverage[0.1]'].round(2)}")
+        logger.log(f"Coverage[0.3]:{metrics['coverage[0.3]'].round(2)}")
+        logger.log(f"Coverage[0.7]:{metrics['coverage[0.5]'].round(2)}")
+        logger.log(f"Coverage[0.9]:{metrics['coverage[0.9]'].round(2)}")
+        logger.log(f"Epoch:{minimal_val_loss['epoch']}")
+        logger.log(f"Loss:{minimal_val_loss['loss'].round(4)}")
+        logger.log(f"TodayLine RMSE:{today_line_rmse.round(2)}")
+        logger.log(f"AverageLine RMSE:{ave_line_rmse.round(2)}")
 
         if i % 1 == 0:
             print(f"forecasting {i}th data, loss: {loss}")
@@ -138,11 +156,11 @@ def main(
 
             fig, ax = plt.subplots()
 
-            ax.plot(range(context_length), input_x, label="input")
-            ax.plot(range(context_length, context_length + prediction_length), target_x, label="target")
+            ax.plot(range(context_length), input_x, label="input", color="red")
+            ax.plot(range(context_length, context_length + prediction_length), target_x, label="target", color="blue")
             #ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
-            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="mean")
-            ax.plot(range(context_length, context_length + prediction_length), median, label="median")
+            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="mean", color="green")
+            #ax.plot(range(context_length, context_length + prediction_length), median, label="median")
             ax.fill_between(
                 range(context_length, context_length + prediction_length),
                 quantile_10,
