@@ -34,5 +34,5 @@ class ForecastOutput:
         self.distribution["mean"] = scaler.inverse_transform([self.distribution["mean"]]).reshape(-1)
         self.distribution["var"] = scaler.inverse_transform([self.distribution["var"]]).reshape(-1)
         self.samples = scaler.inverse_transform(self.samples)
-        self.mean = scaler.inverse_transform([self.mean]).reshape(-1)
-        self.median = scaler.inverse_transform([self.median]).reshape(-1)
+        self.mean = self.gen_mean()
+        self.median = self.quantile(0.5)
