@@ -19,7 +19,7 @@ do
             --split_type index \
             --prediction_length 1 \
             --context_length 30 \
-            --epochs 300 \
+            --epochs 500 \
             --num_batches 64 \
             --num_parallel_samples 1000 \
             --is_pre_scaling 1 \
