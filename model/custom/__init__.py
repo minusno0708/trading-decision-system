@@ -8,6 +8,7 @@ import torch.optim as optim
 from model.custom.estimator import Estimator
 from model.custom.output import ForecastOutput
 from model.custom.scaler import Scaler
+from model.custom.loss_weight import LossWeight
 
 class Model:
     def __init__(
@@ -46,7 +47,7 @@ class Model:
         self.enable_early_stopping = False
         self.early_stopping_delta = 0.01
 
-        self.model_save = True
+        self.model_save = False
 
         self.freq = freq
         self.epochs = epochs
@@ -60,14 +61,16 @@ class Model:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
-        self.add_weight_loss = False
+        self.add_weight_loss = True
 
         if self.is_scaling and self.add_weight_loss:
             self.criterion = nn.GaussianNLLLoss(reduction="none")
         else:
-            self.criterion = nn.GaussianNLLLoss()
+            self.criterion = nn.GaussianNLLLoss(reduction="mean")
 
-        self.scaler = Scaler("mean", self.feature_second)
+        #self.scaler = Scaler("abs_mean", self.feature_second)
+        #self.scaler = Scaler("mean", self.feature_second)
+        self.scaler = Scaler("standard", self.feature_second)
 
         self.path = "checkpoint.pth"
 
@@ -84,6 +87,9 @@ class Model:
         target_x = self.permute_dim(target_x).to(self.device)
         time_features = time_features.to(self.device)
         extention_features = extention_features.to(self.device)
+
+        if self.add_weight_loss:
+            self.loss_weight.calc_weight(input_x)
 
         if self.is_scaling:
             input_x, scale = self.scaler.fit_transform(input_x)
@@ -105,21 +111,21 @@ class Model:
         if self.is_scaling and self.add_weight_loss:
             loss = self.criterion(mean, target_x, var)
 
-            loss= loss.mean(dim=1) * scale.squeeze(1)
-
-            loss = loss.mean()
+            loss = self.loss_weight.add_weight(loss)
         else:
             loss = self.criterion(mean, target_x, var)
 
         return loss, mean, var
 
-    def train(self, dataset: torch.utils.data.DataLoader, val_dataset: torch.utils.data.DataLoader = None):
+    def train(self, dataset: torch.utils.data.DataLoader, val_dataset: torch.utils.data.DataLoader = None, train_target: torch.tensor = None):
         optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
 
         train_loss = []
         val_loss = []
 
         minimal_val_loss = {"loss": np.inf, "epoch": 0}
+
+        self.loss_weight = LossWeight(self.permute_dim(train_target).to(self.device))
 
         for epoch in range(self.epochs):
             self.model.train()
