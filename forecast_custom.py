@@ -141,19 +141,29 @@ def main(
             quantile_70 = forecasts[0].quantile(0.7)
             quantile_90 = forecasts[0].quantile(0.9)
 
+            target_x = np.append(input_x[-1:], target_x)
+            samples_mean = np.append(input_x[-1:], samples_mean)
+            median = np.append(input_x[-1:], median)
+            quantile_10 = np.append(input_x[-1:], quantile_10)
+            quantile_30 = np.append(input_x[-1:], quantile_30)
+            quantile_70 = np.append(input_x[-1:], quantile_70)
+            quantile_90 = np.append(input_x[-1:], quantile_90)
+
+            prediction_range = range(context_length - 1, context_length + prediction_length)
+        
             fig, ax = plt.subplots()
 
             ax.plot(range(context_length), input_x, label="input", color="red")
-            ax.plot(range(context_length, context_length + prediction_length), target_x, label="target", color="blue")
-            ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="mean", color="green")
+            ax.plot(prediction_range, target_x, label="target", color="blue")
+            ax.plot(prediction_range, samples_mean, label="mean", color="green")
             ax.fill_between(
-                range(context_length, context_length + prediction_length),
+                prediction_range,
                 quantile_10,
                 quantile_90,
                 alpha=0.3,
             )
             ax.fill_between(
-                range(context_length, context_length + prediction_length),
+                prediction_range,
                 quantile_30,
                 quantile_70,
                 alpha=0.5,
