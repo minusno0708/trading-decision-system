@@ -10,6 +10,8 @@ from model.custom.output import ForecastOutput
 from model.custom.scaler import Scaler
 from model.custom.loss_weight import LossWeight
 
+from torchinfo import summary
+
 class Model:
     def __init__(
             self,
@@ -56,12 +58,16 @@ class Model:
         self.model = Estimator(
             input_size=self.input_length,
             output_size=self.output_length,
+            prediction_length=prediction_length,
+            context_length=context_length
         )
+
+        summary(self.model, input_size=(64, target_dim, self.input_length))
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
 
-        self.add_weight_loss = True
+        self.add_weight_loss = False
 
         if self.is_scaling and self.add_weight_loss:
             self.criterion = nn.GaussianNLLLoss(reduction="none")
@@ -125,7 +131,8 @@ class Model:
 
         minimal_val_loss = {"loss": np.inf, "epoch": 0}
 
-        self.loss_weight = LossWeight(self.permute_dim(train_target).to(self.device))
+        if train_target is not None:
+            self.loss_weight = LossWeight(self.permute_dim(train_target).to(self.device))
 
         for epoch in range(self.epochs):
             self.model.train()
