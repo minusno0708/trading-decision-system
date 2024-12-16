@@ -74,7 +74,7 @@ def main(
         add_extention_features=add_extention_features,
     )
 
-    evaluator = Evaluator()
+    evaluator = Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9])
 
     train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=False), data_loader.test_dataset(batch_size=1, is_shuffle=False))
 
@@ -103,9 +103,10 @@ def main(
 
     loss_arr = np.array([])
 
+    today_line_rmse_arr = np.array([])
+    ave_line_rmse_arr = np.array([])
+
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
-        print(start_date)
-        
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
         
         loss_arr = np.append(loss_arr, loss)
@@ -119,34 +120,19 @@ def main(
             target_x = target_x.detach().numpy().reshape(-1)
 
         metrics = evaluator.evaluate(forecasts[0], target_x)
-        print(metrics)
 
         today_line = np.array([input_x[-1]] * prediction_length)
         today_line_rmse = evaluator.rmse(today_line, target_x)
-        print("TodayLine RMSE:", today_line_rmse.round(2))
+        today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
 
         ave_line = np.array([input_x.mean()] * prediction_length)
         ave_line_rmse = evaluator.rmse(ave_line, target_x)
-        print("AverageLine RMSE:", ave_line_rmse.round(2))
+        ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
 
-        logger.log(f"Date:{start_date}")
+        if i % 10 == 0:
+            print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
+            logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
 
-        logger.log(f"学習データ[{train_data_length}]")
-        logger.log(f"RMSE:{metrics['rmse'].round(2)}")
-        logger.log(f"Coverage[0.1]:{metrics['coverage[0.1]'].round(2)}")
-        logger.log(f"Coverage[0.3]:{metrics['coverage[0.3]'].round(2)}")
-        logger.log(f"Coverage[0.7]:{metrics['coverage[0.5]'].round(2)}")
-        logger.log(f"Coverage[0.9]:{metrics['coverage[0.9]'].round(2)}")
-        logger.log(f"Epoch:{minimal_val_loss['epoch']}")
-        logger.log(f"Loss:{minimal_val_loss['loss'].round(4)}")
-        logger.log(f"TodayLine RMSE:{today_line_rmse.round(2)}")
-        logger.log(f"AverageLine RMSE:{ave_line_rmse.round(2)}")
-
-        if i % 1 == 0:
-            print(f"forecasting {i}th data, loss: {loss}")
-            logger.log(f"forecasting {i}th data, loss: {loss}")
-
-            #true_mean = forecasts[0].distribution["mean"].reshape(-1)
             samples_mean = forecasts[0].mean
             median = forecasts[0].median
             quantile_10 = forecasts[0].quantile(0.1)
@@ -158,9 +144,7 @@ def main(
 
             ax.plot(range(context_length), input_x, label="input", color="red")
             ax.plot(range(context_length, context_length + prediction_length), target_x, label="target", color="blue")
-            #ax.plot(range(context_length, context_length + prediction_length), true_mean, label="true_mean")
             ax.plot(range(context_length, context_length + prediction_length), samples_mean, label="mean", color="green")
-            #ax.plot(range(context_length, context_length + prediction_length), median, label="median")
             ax.fill_between(
                 range(context_length, context_length + prediction_length),
                 quantile_10,
@@ -185,6 +169,21 @@ def main(
     print("End Test Forecasting")
     logger.log("End Test Forecasting")
 
+    print("精度評価")
+    print(evaluator.mean())
+    logger.log("精度評価")
+    logger.log(evaluator.mean())
+
+    print("前日価格比較")
+    print(str(today_line_rmse_arr.mean()))
+    logger.log("前日価格比較")
+    logger.log(str(today_line_rmse_arr.mean()))
+
+    print("平均価格比較")
+    print(ave_line_rmse_arr.mean())
+    logger.log("平均価格比較")
+    logger.log(str(ave_line_rmse_arr.mean()))
+    
     print("Test Loss:", np.mean(loss_arr))
     logger.log("Test Loss: " + str(np.mean(loss_arr)))
 
