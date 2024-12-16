@@ -106,12 +106,11 @@ class DataLoader:
         self.print_datainfo("train")
         self.print_datainfo("test")
 
-        input("...")
-
     def split_dataset_val(self, val_num):
         # データを分割
         train_data = self.df_row[(self.df_row.index >= self.train_start_date) & (self.df_row.index <= self.train_end_date)].copy()
-        test_data = self.df_row[(self.df_row.index >= self.test_start_date - datetime.timedelta(days=self.prediction_length)) & (self.df_row.index <= self.test_end_date)].copy()
+        test_data = self.df_row[(self.df_row.index >= self.test_start_date) & (self.df_row.index <= self.test_end_date)].copy()
+        val_data = self.df_row[(self.df_row.index >= self.val_start_date) & (self.df_row.index <= self.val_end_date)].copy()
 
         # 値を標準化
         if self.scaler_flag:
@@ -119,18 +118,20 @@ class DataLoader:
                 self.scaler[col].fit(train_data[col].values.reshape(-1, 1))
                 train_data[col] = self.scaler[col].transform(train_data[col].values.reshape(-1, 1))
                 test_data[col] = self.scaler[col].transform(test_data[col].values.reshape(-1, 1))
+                val_data[col] = self.scaler[col].transform(val_data[col].values.reshape(-1, 1))
 
                 for extention_name in self.extention_cols:
                     train_data[extention_name] = self.scaler[col].transform(train_data[extention_name].values.reshape(-1, 1))
                     test_data[extention_name] = self.scaler[col].transform(test_data[extention_name].values.reshape(-1, 1))
+                    val_data[extention_name] = self.scaler[col].transform(val_data[extention_name].values.reshape(-1, 1))
 
-        self.train = train_data[:-val_num]
-        self.val = train_data[-val_num - context_length - prediction_length:]
+        self.train = train_data
+        self.val = val_data
         self.test = test_data 
 
-        print("train date length: ", len(self.train)-self.context_length-1)
-        print("val date length: ", len(self.val)-self.context_length-1)
-        print("test date length: ", len(self.test)-self.context_length-1)
+        self.print_datainfo("train")
+        self.print_datainfo("val")
+        self.print_datainfo("test")
 
     def update_date(self, train_start_date, train_end_date, test_start_date, test_end_date):
         self.train_start_date = train_start_date
@@ -145,8 +146,14 @@ class DataLoader:
 
         self.test_start_date = self.date[target_index - self.context_length]
         self.test_end_date = self.date[target_index + test_num + self.prediction_length - 2]
-        self.train_end_date = self.date[target_index - 1]
-        self.train_start_date = self.date[target_index - train_num - self.context_length - self.prediction_length + 1]
+        self.val_end_date = self.date[target_index - 1]
+        self.val_start_date = self.date[target_index - val_num - self.context_length - self.prediction_length + 1]
+        if val_num > 0:
+            self.train_end_date = self.date[target_index - val_num - self.prediction_length]
+            self.train_start_date = self.date[target_index - train_num - val_num - self.context_length - self.prediction_length*2 + 2]
+        else:
+            self.train_end_date = self.date[target_index - 1]
+            self.train_start_date = self.date[target_index - train_num - self.context_length - self.prediction_length + 1]
 
         if val_num > 0:
             self.split_dataset_val(val_num)

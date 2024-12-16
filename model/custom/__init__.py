@@ -49,7 +49,7 @@ class Model:
         self.enable_early_stopping = False
         self.early_stopping_delta = 0.01
 
-        self.model_save = False
+        self.model_save = True
 
         self.freq = freq
         self.epochs = epochs
@@ -75,8 +75,8 @@ class Model:
             self.criterion = nn.GaussianNLLLoss(reduction="mean")
 
         #self.scaler = Scaler("abs_mean", self.feature_second)
-        #self.scaler = Scaler("mean", self.feature_second)
-        self.scaler = Scaler("standard", self.feature_second)
+        self.scaler = Scaler("mean", self.feature_second)
+        #self.scaler = Scaler("standard", self.feature_second)
 
         self.path = "checkpoint.pth"
 

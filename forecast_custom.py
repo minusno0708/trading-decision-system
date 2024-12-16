@@ -31,6 +31,7 @@ def main(
     test_end_date,
     train_data_length,
     test_data_length,
+    val_data_length,
     split_type,
     prediction_length,
     context_length,
@@ -60,7 +61,7 @@ def main(
     if split_type == "datetime":
         data_loader.update_date(train_start_date, train_end_date, test_start_date, test_end_date)
     elif split_type == "index":
-        data_loader.update_date_by_index(test_start_date, train_data_length, test_data_length)
+        data_loader.update_date_by_index(test_start_date, train_data_length, test_data_length, val_data_length)
 
     model = Model(
         context_length=context_length,
@@ -76,7 +77,7 @@ def main(
 
     evaluator = Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9])
 
-    train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=False), data_loader.test_dataset(batch_size=1, is_shuffle=False))
+    train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=False), data_loader.val_dataset(batch_size=1, is_shuffle=False))
 
     logger.log("Train Loss")
     logger.log(train_loss)
@@ -217,6 +218,7 @@ if __name__ == "__main__":
     
     parser.add_argument("--train_data_length", type=int, default=60)
     parser.add_argument("--test_data_length", type=int, default=30)
+    parser.add_argument("--val_data_length", type=int, default=0)
     parser.add_argument("--split_type", type=str, default="datetime")
 
     parser.add_argument("--prediction_length", type=int, default=30)
@@ -266,6 +268,7 @@ if __name__ == "__main__":
         test_end_date=args.test_end_date,
         train_data_length=args.train_data_length,
         test_data_length=args.test_data_length,
+        val_data_length=args.val_data_length,
         split_type=args.split_type,
         prediction_length=args.prediction_length,
         context_length=args.context_length,

@@ -59,3 +59,7 @@ class CustomDataProvider(SelfDataLoader):
     def test_dataset(self, batch_size=1, is_shuffle=False):
         torch_dataset = self.custom_dataset(self.test, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
+    
+    def val_dataset(self, batch_size=1, is_shuffle=False):
+        torch_dataset = self.custom_dataset(self.val, batch_size)
+        return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
