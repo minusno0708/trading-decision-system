@@ -1,7 +1,9 @@
 import numpy as np
 
+metrics_target = ["rmse", "mae", "mape", "quantile_loss", "coverage"]
+
 class Evaluator:
-    def __init__(self, target = ["rmse", "quantile_loss", "coverage"], quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
+    def __init__(self, target = metrics_target, quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
         self.target = target
         self.quantiles = quantiles
 
@@ -23,6 +25,8 @@ class Evaluator:
             metrics['abs_target_mean'] = self.abs_target_mean(target)
         if "mae" in self.target:
             metrics['mae'] = self.mae(target, forecasts.mean)
+        if "mape" in self.target:
+            metrics['mape'] = self.mape(target, forecasts.mean)
         if "rmse" in self.target:
             metrics['rmse'] = self.rmse(target, forecasts.mean)
 
@@ -47,7 +51,7 @@ class Evaluator:
                 self.metrics[t] += metrics[t]
         self.metrics["count"] += 1
 
-    def get_metrics(self):
+    def mean(self):
         metrics = {}
         for t in self.target:
             if t in ["quantile_loss", "w_quantile_loss", "coverage"]:
@@ -65,6 +69,9 @@ class Evaluator:
 
     def mae(self, target, forecast):
         return np.mean(np.abs(target - forecast))
+
+    def mape(self, target, forecast):
+        return np.mean(np.abs((target - forecast) / target)) * 100
 
     def rmse(self, target, forecast):
         return np.sqrt(np.mean(np.square((target - forecast))))
