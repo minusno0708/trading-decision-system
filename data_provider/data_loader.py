@@ -103,8 +103,10 @@ class DataLoader:
         self.train = train_data
         self.test = test_data 
 
-        print("train date length: ", len(self.train)-self.context_length)
-        print("test date length: ", len(self.test)-self.context_length)
+        self.print_datainfo("train")
+        self.print_datainfo("test")
+
+        input("...")
 
     def split_dataset_val(self, val_num):
         # データを分割
@@ -142,9 +144,9 @@ class DataLoader:
         target_index = self.search_date_index(test_start_date)
 
         self.test_start_date = self.date[target_index - self.context_length]
-        self.test_end_date = self.date[target_index + test_num - 1]
+        self.test_end_date = self.date[target_index + test_num + self.prediction_length - 2]
         self.train_end_date = self.date[target_index - 1]
-        self.train_start_date = self.date[target_index - train_num]
+        self.train_start_date = self.date[target_index - train_num - self.context_length - self.prediction_length + 1]
 
         if val_num > 0:
             self.split_dataset_val(val_num)
@@ -157,3 +159,14 @@ class DataLoader:
     def is_date_in_dataset(self, date):
         return date in self.df_row.index
 
+    def print_datainfo(self, label="train"):
+        if label == "train":
+            print(f"train date, start: {self.train_start_date}, end: {self.train_end_date}")
+            print("train date num: ", len(self.train)-self.context_length-self.prediction_length + 1)
+        elif label == "test":
+            print(f"test date, start: {self.test_start_date}, end: {self.test_end_date}")
+            print("test date num: ", len(self.test)-self.context_length-self.prediction_length + 1)
+        elif label == "val":
+            print(f"val date, start: {self.val_start_date}, end: {self.val_end_date}")
+            print("val date num: ", len(self.val)-self.context_length-self.prediction_length + 1)
+        
