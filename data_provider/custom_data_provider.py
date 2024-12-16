@@ -43,7 +43,7 @@ class CustomDataset(Dataset):
         input_x = torch.tensor(np.array([self.data[idx:idx+self.context_length]])).float()
         target_x = torch.tensor(np.array([self.data[idx+self.context_length:idx+self.context_length+self.prediction_length]])).float()
 
-        time_features = torch.tensor(self.time_features[idx+self.context_length:idx+self.context_length+self.prediction_length]).float()
+        time_features = torch.tensor(self.time_features[idx:idx+self.context_length]).float()
         extention_features = torch.tensor(self.extention_features[idx:idx+self.context_length]).float()
 
         return start_date, input_x, target_x, time_features, extention_features
