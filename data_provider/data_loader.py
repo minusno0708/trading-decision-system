@@ -44,6 +44,8 @@ class DataLoader:
         # 時刻をdatetime型に変換
         if self.file_path == "dataset/usd_jpy.csv":
             df_row[self.index_col] = pd.to_datetime(df_row[self.index_col], format="%m/%d/%Y")
+        elif self.file_path == "dataset/weather.csv":
+            df_row[self.index_col] = pd.to_datetime(df_row[self.index_col], format="%Y-%m-%d %H:%M:%S")
         else:
             df_row[self.index_col] = pd.to_datetime(df_row[self.index_col], format="%Y-%m-%dT%H:%M:%S.%fZ")
 
