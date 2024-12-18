@@ -83,10 +83,10 @@ class Model:
     def permute_dim(self, x):
         # 元の次元 [batch_size, feature_size, time_step]
         if self.feature_second:
-            return x.permute(0, 1, 2)
+            return x.permute(0, 2, 1)
         else:
             # 変換後 [batch_size, time_step, feature_size]
-            return x.permute(0, 2, 1)
+            return x.permute(0, 1, 2)
 
     def pre_prepare(self, input_x: torch.tensor, target_x: torch.tensor, time_features: torch.tensor, extention_features: torch.tensor):
         input_x = self.permute_dim(input_x).to(self.device)
@@ -232,12 +232,11 @@ class Model:
 
         loss, mean, var = self.loss_compute(mean, target_x, var, scale)
 
-        mean = self.permute_dim(mean).squeeze(0).cpu().numpy()
-        var = self.permute_dim(var).squeeze(0).cpu().numpy()
+        mean = self.permute_dim(mean).squeeze(0).permute(1, 0).cpu().numpy()
+        var = self.permute_dim(var).squeeze(0).permute(1, 0).cpu().cpu().numpy()
         loss = loss.cpu().numpy()
 
         output = []
-
         for i in range(len(mean)):
             output.append(ForecastOutput(mean[i], var[i], self.num_parallel_samples))
 

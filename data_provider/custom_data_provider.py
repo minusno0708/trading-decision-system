@@ -10,7 +10,7 @@ class CustomDataset(Dataset):
     def __init__(self, dataset, target_cols, extention_cols, context_length, prediction_length, batch_size):
         date = dataset.index.values
 
-        self.data = dataset[target_cols[0]].values
+        self.data = dataset[target_cols].values
         self.date_str = date.astype(str)
 
         self.time_features = self.time_to_feature(date)
@@ -40,8 +40,8 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         start_date = self.date_str[idx+self.context_length]
-        input_x = torch.tensor(np.array([self.data[idx:idx+self.context_length]])).float()
-        target_x = torch.tensor(np.array([self.data[idx+self.context_length:idx+self.context_length+self.prediction_length]])).float()
+        input_x = torch.tensor(np.array([self.data[idx:idx+self.context_length]])).float().squeeze(0)
+        target_x = torch.tensor(np.array([self.data[idx+self.context_length:idx+self.context_length+self.prediction_length]])).float().squeeze(0)
 
         time_features = torch.tensor(self.time_features[idx:idx+self.context_length]).float()
         extention_features = torch.tensor(self.extention_features[idx:idx+self.context_length]).float()

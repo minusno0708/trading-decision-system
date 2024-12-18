@@ -107,32 +107,59 @@ def main(
     today_line_rmse_arr = np.array([])
     ave_line_rmse_arr = np.array([])
 
+    today_line_mse_arr = np.array([])
+    ave_line_mse_arr = np.array([])
+
+    today_line_mae_arr = np.array([])
+    ave_line_mae_arr = np.array([])
+
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
         
         loss_arr = np.append(loss_arr, loss)
 
         if is_pre_scaling:
-            forecasts[0].inverse_transform(data_loader.scaler[target_cols[0]])
-            input_x = data_loader.inverse_transform(input_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
-            target_x = data_loader.inverse_transform(target_x.detach().numpy().reshape(-1), target_cols[0]).reshape(-1)
+            input_x_inverse = []
+            target_x_inverse = []
+
+            for c, col in enumerate(target_cols):
+                forecasts[c].inverse_transform(data_loader.scaler[col])
+                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,0].detach().numpy().reshape(-1), target_cols[0]).reshape(-1))
+                target_x_inverse.append(data_loader.inverse_transform(target_x[:,:,0].detach().numpy().reshape(-1), target_cols[0]).reshape(-1))
+
+            input_x = np.array(input_x_inverse)
+            target_x = np.array(target_x_inverse)
         else:
             input_x = input_x.detach().numpy().reshape(-1)
             target_x = target_x.detach().numpy().reshape(-1)
 
-        metrics = evaluator.evaluate(forecasts[0], target_x)
+        for c in range(len(target_cols)):
+            metrics = evaluator.evaluate(forecasts[c], target_x[c])
 
-        today_line = np.array([input_x[-1]] * prediction_length)
-        today_line_rmse = evaluator.rmse(today_line, target_x)
-        today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
+            today_line = np.array([input_x[c, -1]] * prediction_length)
+            today_line_rmse = evaluator.rmse(today_line, target_x[c])
+            today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
 
-        ave_line = np.array([input_x.mean()] * prediction_length)
-        ave_line_rmse = evaluator.rmse(ave_line, target_x)
-        ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
+            today_line_mse = evaluator.mse(today_line, target_x[c])
+            today_line_mse_arr = np.append(today_line_mse_arr, today_line_mse)
+
+            today_line_mae = evaluator.mae(today_line, target_x[c])
+            today_line_mae_arr = np.append(today_line_mae_arr, today_line_mae)
+
+            ave_line = np.array([input_x[c].mean()] * prediction_length)
+            ave_line_rmse = evaluator.rmse(ave_line, target_x[c])
+            ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
+
+            ave_line_mse = evaluator.mse(ave_line, target_x[c])
+            ave_line_mse_arr = np.append(ave_line_mse_arr, ave_line_mse)
+
+            ave_line_mae = evaluator.mae(ave_line, target_x[c])
+            ave_line_mae_arr = np.append(ave_line_mae_arr, ave_line_mae)
 
         if i % 10 == 0:
             print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
             logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
+            target_x = np.append(input_x[:, -1:], target_x, axis=1)
 
             samples_mean = forecasts[0].mean
             median = forecasts[0].median
@@ -141,20 +168,19 @@ def main(
             quantile_70 = forecasts[0].quantile(0.7)
             quantile_90 = forecasts[0].quantile(0.9)
 
-            target_x = np.append(input_x[-1:], target_x)
-            samples_mean = np.append(input_x[-1:], samples_mean)
-            median = np.append(input_x[-1:], median)
-            quantile_10 = np.append(input_x[-1:], quantile_10)
-            quantile_30 = np.append(input_x[-1:], quantile_30)
-            quantile_70 = np.append(input_x[-1:], quantile_70)
-            quantile_90 = np.append(input_x[-1:], quantile_90)
+            samples_mean = np.append(input_x[0, -1:], samples_mean)
+            median = np.append(input_x[0, -1:], median)
+            quantile_10 = np.append(input_x[0, -1:], quantile_10)
+            quantile_30 = np.append(input_x[0, -1:], quantile_30)
+            quantile_70 = np.append(input_x[0, -1:], quantile_70)
+            quantile_90 = np.append(input_x[0, -1:], quantile_90)
 
             prediction_range = range(context_length - 1, context_length + prediction_length)
         
             fig, ax = plt.subplots()
 
-            ax.plot(range(context_length), input_x, label="input", color="red")
-            ax.plot(prediction_range, target_x, label="target", color="blue")
+            ax.plot(range(context_length), input_x[0], label="input", color="red")
+            ax.plot(prediction_range, target_x[0], label="target", color="blue")
             ax.plot(prediction_range, samples_mean, label="mean", color="green")
             ax.fill_between(
                 prediction_range,
@@ -186,14 +212,22 @@ def main(
     logger.log(evaluator.mean())
 
     print("前日価格比較")
-    print(str(today_line_rmse_arr.mean()))
+    print("rmse:" + str(today_line_rmse_arr.mean()))
+    print("mse:" + str(today_line_mse_arr.mean()))
+    print("mae:" + str(today_line_mae_arr.mean()))
     logger.log("前日価格比較")
-    logger.log(str(today_line_rmse_arr.mean()))
+    logger.log("rmse:" + str(today_line_rmse_arr.mean()))
+    logger.log("mse:" + str(today_line_mse_arr.mean()))
+    logger.log("mae:" + str(today_line_mae_arr.mean()))
 
     print("平均価格比較")
-    print(ave_line_rmse_arr.mean())
+    print("rmse:" + str(ave_line_rmse_arr.mean()))
+    print("mse:" + str(ave_line_mse_arr.mean()))
+    print("mae:" + str(ave_line_mae_arr.mean()))
     logger.log("平均価格比較")
-    logger.log(str(ave_line_rmse_arr.mean()))
+    logger.log("rmse:" + str(ave_line_rmse_arr.mean()))
+    logger.log("mse:" + str(ave_line_mse_arr.mean()))
+    logger.log("mae:" + str(ave_line_mae_arr.mean()))
     
     print("Test Loss:", np.mean(loss_arr))
     logger.log("Test Loss: " + str(np.mean(loss_arr)))
@@ -208,7 +242,10 @@ def int2bool(v):
         return True
 
 def str2datetime(v):
-    return datetime.strptime(v, "%Y-%m-%d")
+    if len(v.split("T")) == 2:
+        return datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
+    else:
+        return datetime.strptime(v, "%Y-%m-%d")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
