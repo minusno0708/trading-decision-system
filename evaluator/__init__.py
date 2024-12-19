@@ -1,6 +1,6 @@
 import numpy as np
 
-metrics_target = ["rmse", "mae", "mape", "quantile_loss", "coverage"]
+metrics_target = ["rmse", "mse", "mae", "mape", "quantile_loss", "coverage"]
 
 class Evaluator:
     def __init__(self, target = metrics_target, quantiles = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
@@ -25,6 +25,8 @@ class Evaluator:
             metrics['abs_target_mean'] = self.abs_target_mean(target)
         if "mae" in self.target:
             metrics['mae'] = self.mae(target, forecasts.mean)
+        if "mse" in self.target:
+            metrics['mse'] = np.mean(np.square(target - forecasts.mean))
         if "mape" in self.target:
             metrics['mape'] = self.mape(target, forecasts.mean)
         if "rmse" in self.target:
@@ -69,6 +71,9 @@ class Evaluator:
 
     def mae(self, target, forecast):
         return np.mean(np.abs(target - forecast))
+
+    def mse(self, target, forecast):
+        return np.mean(np.square(target - forecast))
 
     def mape(self, target, forecast):
         return np.mean(np.abs((target - forecast) / target)) * 100
