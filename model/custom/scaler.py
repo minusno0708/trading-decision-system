@@ -28,6 +28,9 @@ class Scaler:
             mean = x.mean(dim=self.target_dim, keepdim=True)
             std = x.std(dim=self.target_dim, keepdim=True)
 
+            # stdが0の場合は1にする
+            std = torch.where(std == 0, torch.tensor(1), std)
+
             scale = (mean, std)
         else:
             raise ValueError("Invalid scaler name")
