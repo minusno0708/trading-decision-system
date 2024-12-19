@@ -140,8 +140,8 @@ def main(
 
             for c, col in enumerate(target_cols):
                 forecasts[c].inverse_transform(data_loader.scaler[col])
-                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,0].detach().numpy().squeeze(0), target_cols[0]).squeeze(0))
-                target_x_inverse.append(data_loader.inverse_transform(target_x[:,:,0].detach().numpy().squeeze(0), target_cols[0]).squeeze(0))
+                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,c].detach().numpy().squeeze(0), col).squeeze(0))
+                target_x_inverse.append(data_loader.inverse_transform(target_x[:,:,c].detach().numpy().squeeze(0), col).squeeze(0))
 
             input_x = np.array(input_x_inverse)
             target_x = np.array(target_x_inverse)
