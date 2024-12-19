@@ -72,11 +72,11 @@ class Model:
         if self.is_scaling and self.add_weight_loss:
             self.criterion = nn.GaussianNLLLoss(reduction="none")
         else:
-            self.criterion = nn.GaussianNLLLoss(reduction="mean")
+            self.criterion = nn.GaussianNLLLoss(reduction="mean", eps=1e-6)
 
         #self.scaler = Scaler("abs_mean", self.feature_second)
-        self.scaler = Scaler("mean", self.feature_second)
-        #self.scaler = Scaler("standard", self.feature_second)
+        #self.scaler = Scaler("mean", self.feature_second)
+        self.scaler = Scaler("standard", self.feature_second)
 
         self.path = "checkpoint.pth"
 
@@ -233,7 +233,7 @@ class Model:
         loss, mean, var = self.loss_compute(mean, target_x, var, scale)
 
         mean = self.permute_dim(mean).squeeze(0).permute(1, 0).cpu().numpy()
-        var = self.permute_dim(var).squeeze(0).permute(1, 0).cpu().cpu().numpy()
+        var = self.permute_dim(var).squeeze(0).permute(1, 0).cpu().numpy()
         loss = loss.cpu().numpy()
 
         output = []
