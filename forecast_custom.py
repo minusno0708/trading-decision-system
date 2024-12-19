@@ -44,6 +44,9 @@ def main(
     add_extention_features
 ):
 
+    is_training = True
+    is_feat_metrics = True
+
     logger = Logger(exp_name, f"{output_path}/logs")
     logger.log("Start Self Forecasting, Seed: " + str(seed))
     logger.timestamp()
@@ -75,34 +78,37 @@ def main(
         add_extention_features=add_extention_features,
     )
 
-    evaluator = Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9])
+    if is_training:
+        train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=False), data_loader.val_dataset(batch_size=1, is_shuffle=False))
 
-    train_loss, val_loss, minimal_val_loss = model.train(data_loader.train_dataset(batch_size=num_batches, is_shuffle=False), data_loader.val_dataset(batch_size=1, is_shuffle=False))
+        logger.log("Train Loss")
+        logger.log(train_loss)
 
-    logger.log("Train Loss")
-    logger.log(train_loss)
+        logger.log("Val Loss")
+        logger.log(val_loss)
 
-    logger.log("Val Loss")
-    logger.log(val_loss)
+        logger.log("Minimal Val Loss")
+        logger.log(f"Epoch: {minimal_val_loss['epoch']}, Loss: {minimal_val_loss['loss']}")
 
-    logger.log("Minimal Val Loss")
-    logger.log(f"Epoch: {minimal_val_loss['epoch']}, Loss: {minimal_val_loss['loss']}")
+        # ロスの推移をプロット
+        fig, ax = plt.subplots()
 
-    # ロスの推移をプロット
-    fig, ax = plt.subplots()
+        ax.plot(train_loss, label="train")
+        ax.plot(val_loss, label="val")
 
-    ax.plot(train_loss, label="train")
-    ax.plot(val_loss, label="val")
+        plt.legend()
 
-    plt.legend()
-
-    plt.savefig(f"{output_path}/images/{exp_name}/loss_{seed}.png")
-    plt.close(fig)
+        plt.savefig(f"{output_path}/images/{exp_name}/loss_{seed}.png")
+        plt.close(fig)
+    else:
+        model.load()
 
     print("Forecast Test Data")
     logger.log("Forecast Test Data")
 
     loss_arr = np.array([])
+
+    evaluator = Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9])
 
     today_line_rmse_arr = np.array([])
     ave_line_rmse_arr = np.array([])
@@ -112,6 +118,16 @@ def main(
 
     today_line_mae_arr = np.array([])
     ave_line_mae_arr = np.array([])
+
+    if is_feat_metrics:
+        feat_evaluator = []
+        feat_today_line_rmse_arr = []
+        feat_ave_line_rmse_arr = []
+        for c in range(len(target_cols)):
+            feat_evaluator.append(Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9]))
+
+            feat_today_line_rmse_arr.append(np.array([]))
+            feat_ave_line_rmse_arr.append(np.array([]))
 
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
@@ -124,14 +140,14 @@ def main(
 
             for c, col in enumerate(target_cols):
                 forecasts[c].inverse_transform(data_loader.scaler[col])
-                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,0].detach().numpy().reshape(-1), target_cols[0]).reshape(-1))
-                target_x_inverse.append(data_loader.inverse_transform(target_x[:,:,0].detach().numpy().reshape(-1), target_cols[0]).reshape(-1))
+                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,0].detach().numpy().squeeze(0), target_cols[0]).squeeze(0))
+                target_x_inverse.append(data_loader.inverse_transform(target_x[:,:,0].detach().numpy().squeeze(0), target_cols[0]).squeeze(0))
 
             input_x = np.array(input_x_inverse)
             target_x = np.array(target_x_inverse)
         else:
-            input_x = input_x.detach().numpy().reshape(-1)
-            target_x = target_x.detach().numpy().reshape(-1)
+            input_x = input_x.squeeze(0).permute(1, 0).detach().numpy()
+            target_x = target_x.squeeze(0).permute(1, 0).detach().numpy()
 
         for c in range(len(target_cols)):
             metrics = evaluator.evaluate(forecasts[c], target_x[c])
@@ -156,9 +172,18 @@ def main(
             ave_line_mae = evaluator.mae(ave_line, target_x[c])
             ave_line_mae_arr = np.append(ave_line_mae_arr, ave_line_mae)
 
-        if i % 10 == 0:
+            if is_feat_metrics:
+                feat_metrics = feat_evaluator[c].evaluate(forecasts[c], target_x[c])
+
+                feat_today_line_rmse_arr[c] = np.append(feat_today_line_rmse_arr[c], today_line_rmse)
+                feat_ave_line_rmse_arr[c] = np.append(feat_ave_line_rmse_arr[c], ave_line_rmse)
+
+        if i % 1000 == 0:
             print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
             logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
+
+            print(evaluator.mean())
+
             target_x = np.append(input_x[:, -1:], target_x, axis=1)
 
             samples_mean = forecasts[0].mean
@@ -205,6 +230,22 @@ def main(
 
     print("End Test Forecasting")
     logger.log("End Test Forecasting")
+
+    for c, col in enumerate(target_cols):
+        print("精度評価[{0}]".format(col))
+        print(feat_evaluator[c].mean())
+        logger.log("精度評価[{0}]".format(col))
+        logger.log(evaluator.mean())
+
+        print("前日価格比較[{0}]".format(col))
+        print("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+        logger.log("前日価格比較[{0}]".format(col))
+        logger.log("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+
+        print("平均価格比較[{0}]".format(col))
+        print("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+        logger.log("平均価格比較[{0}]".format(col))
+        logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
 
     print("精度評価")
     print(evaluator.mean())
