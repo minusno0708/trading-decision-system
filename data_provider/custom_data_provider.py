@@ -26,11 +26,17 @@ class CustomDataset(Dataset):
         time_feature = []
 
         for d in dt:
+            pd_time = pd.Timestamp(d)
             time_feature.append([
-                d.year / 2100, # year
-                (d.month - 1) / 11, # month
-                (d.day - 1) / 30, # day of month
-                d.weekday() / 6, # day of week
+                #pd_time.year / 2100, # year
+                #(pd_time.month - 1) / 11, # month
+                #(pd_time.day - 1) / 30, # day of month
+                #pd_time.weekday() / 6, # day of week
+                (pd_time.hour*60 + pd_time.minute) / (24*60) - 0.5, # hour
+                pd_time.hour / 23 - 0.5, # hour
+                pd_time.dayofweek / 6 - 0.5, # day of week
+                (pd_time.day - 1) / 30 - 0.5, # day of month
+                (pd_time.dayofyear - 1) / 364 - 0.5, # day of year
             ])
 
         return np.array(time_feature)

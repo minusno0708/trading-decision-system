@@ -29,7 +29,7 @@ class Model:
         self.feature_second = False
 
         self.add_time_features = add_time_features
-        self.num_time_features = 4
+        self.num_time_features = 5
 
         self.add_extention_features = add_extention_features
         self.num_extention_features = 3
