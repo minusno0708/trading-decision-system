@@ -73,13 +73,13 @@ class Evaluator:
         return np.mean(np.abs(target - forecast))
 
     def mse(self, target, forecast):
-        return np.mean(np.square(target - forecast))
+        return np.mean((target - forecast) ** 2)
 
     def mape(self, target, forecast):
         return np.mean(np.abs((target - forecast) / target)) * 100
 
     def rmse(self, target, forecast):
-        return np.sqrt(np.mean(np.square((target - forecast))))
+        return np.sqrt(self.mse(target, forecast))
 
     def nrmse(self, rmse, abs_target_mean):
         return rmse / abs_target_mean
