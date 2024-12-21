@@ -44,8 +44,8 @@ def main(
     add_extention_features
 ):
 
-    is_training = True
-    is_feat_metrics = True
+    is_training = False
+    is_feat_metrics = False
 
     logger = Logger(exp_name, f"{output_path}/logs")
     logger.log("Start Self Forecasting, Seed: " + str(seed))
@@ -134,42 +134,47 @@ def main(
         
         loss_arr = np.append(loss_arr, loss)
 
+        mean = np.array([f.distribution["mean"] for f in forecasts]).T
+        quantile_10 = np.array([f.quantile(0.1) for f in forecasts]).T
+        quantile_30 = np.array([f.quantile(0.3) for f in forecasts]).T
+        quantile_50 = np.array([f.quantile(0.5) for f in forecasts]).T
+        quantile_70 = np.array([f.quantile(0.7) for f in forecasts]).T
+        quantile_90 = np.array([f.quantile(0.9) for f in forecasts]).T
+
+        input_x = input_x.squeeze(0).detach().numpy()
+        target_x = target_x.squeeze(0).detach().numpy()
+
         if is_pre_scaling:
-            input_x_inverse = []
-            target_x_inverse = []
-
-            for c, col in enumerate(target_cols):
-                forecasts[c].inverse_transform(data_loader.scaler[col])
-                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,c].detach().numpy().squeeze(0), col).squeeze(0))
-                target_x_inverse.append(data_loader.inverse_transform(target_x[:,:,c].detach().numpy().squeeze(0), col).squeeze(0))
-
-            input_x = np.array(input_x_inverse)
-            target_x = np.array(target_x_inverse)
-        else:
-            input_x = input_x.squeeze(0).permute(1, 0).detach().numpy()
-            target_x = target_x.squeeze(0).permute(1, 0).detach().numpy()
+            input_x = data_loader.inverse_transform(input_x)
+            target_x = data_loader.inverse_transform(target_x)
+            mean = data_loader.inverse_transform(mean)
+            quantile_10 = data_loader.inverse_transform(quantile_10)
+            quantile_30 = data_loader.inverse_transform(quantile_30)
+            quantile_50 = data_loader.inverse_transform(quantile_50)
+            quantile_70 = data_loader.inverse_transform(quantile_70)
+            quantile_90 = data_loader.inverse_transform(quantile_90)
 
         for c in range(len(target_cols)):
-            metrics = evaluator.evaluate(forecasts[c], target_x[c])
+            metrics = evaluator.evaluate(mean[:, c], target_x[:, c])
 
-            today_line = np.array([input_x[c, -1]] * prediction_length)
-            today_line_rmse = evaluator.rmse(today_line, target_x[c])
+            today_line = np.array([input_x[-1, c]] * prediction_length)
+            today_line_rmse = evaluator.rmse(today_line, target_x[:, c])
             today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
 
-            today_line_mse = evaluator.mse(today_line, target_x[c])
+            today_line_mse = evaluator.mse(today_line, target_x[:, c])
             today_line_mse_arr = np.append(today_line_mse_arr, today_line_mse)
 
-            today_line_mae = evaluator.mae(today_line, target_x[c])
+            today_line_mae = evaluator.mae(today_line, target_x[:, c])
             today_line_mae_arr = np.append(today_line_mae_arr, today_line_mae)
 
-            ave_line = np.array([input_x[c].mean()] * prediction_length)
-            ave_line_rmse = evaluator.rmse(ave_line, target_x[c])
+            ave_line = np.array([input_x[:, c].mean()] * prediction_length)
+            ave_line_rmse = evaluator.rmse(ave_line, target_x[:, c])
             ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
 
-            ave_line_mse = evaluator.mse(ave_line, target_x[c])
+            ave_line_mse = evaluator.mse(ave_line, target_x[:, c])
             ave_line_mse_arr = np.append(ave_line_mse_arr, ave_line_mse)
 
-            ave_line_mae = evaluator.mae(ave_line, target_x[c])
+            ave_line_mae = evaluator.mae(ave_line, target_x[:, c])
             ave_line_mae_arr = np.append(ave_line_mae_arr, ave_line_mae)
 
             if is_feat_metrics:
@@ -178,7 +183,8 @@ def main(
                 feat_today_line_rmse_arr[c] = np.append(feat_today_line_rmse_arr[c], today_line_rmse)
                 feat_ave_line_rmse_arr[c] = np.append(feat_ave_line_rmse_arr[c], ave_line_rmse)
 
-        if i % 1000 == 0:
+        #if i % 1000 == 0:
+        if False:
             print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
             logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
 
@@ -231,21 +237,22 @@ def main(
     print("End Test Forecasting")
     logger.log("End Test Forecasting")
 
-    for c, col in enumerate(target_cols):
-        print("精度評価[{0}]".format(col))
-        print(feat_evaluator[c].mean())
-        logger.log("精度評価[{0}]".format(col))
-        logger.log(evaluator.mean())
+    if is_feat_metrics:
+        for c, col in enumerate(target_cols):
+            print("精度評価[{0}]".format(col))
+            print(feat_evaluator[c].mean())
+            logger.log("精度評価[{0}]".format(col))
+            logger.log(evaluator.mean())
 
-        print("前日価格比較[{0}]".format(col))
-        print("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
-        logger.log("前日価格比較[{0}]".format(col))
-        logger.log("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+            print("前日価格比較[{0}]".format(col))
+            print("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+            logger.log("前日価格比較[{0}]".format(col))
+            logger.log("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
 
-        print("平均価格比較[{0}]".format(col))
-        print("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
-        logger.log("平均価格比較[{0}]".format(col))
-        logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+            print("平均価格比較[{0}]".format(col))
+            print("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+            logger.log("平均価格比較[{0}]".format(col))
+            logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
 
     print("精度評価")
     print(evaluator.mean())

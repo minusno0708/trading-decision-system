@@ -25,9 +25,7 @@ class DataLoader:
         self.scaler_flag = scaler_flag
         self.nums_moving_average = [5, 25, 75]
 
-        self.scaler = {}
-        for col in self.target_cols:
-            self.scaler[col] = StandardScaler()
+        self.scaler = StandardScaler()
 
         self.extention_cols = []
 
@@ -54,17 +52,18 @@ class DataLoader:
         df_row = df_row.set_index(self.index_col)
 
         # 移動平均を追加
-        for num in self.nums_moving_average:
-            for col in self.target_cols:
-                extention_name = f"{col}_mov_line_{num}"
-                df_row[extention_name] = df_row[col].rolling(window=num).mean()
-                self.extention_cols.append(extention_name)
+        if False:
+            for num in self.nums_moving_average:
+                for col in self.target_cols:
+                    extention_name = f"{col}_mov_line_{num}"
+                    df_row[extention_name] = df_row[col].rolling(window=num).mean()
+                    self.extention_cols.append(extention_name)
 
         self.df_row = df_row
         self.date = df_row.index
 
-    def inverse_transform(self, values: np.ndarray, col: str = "close") -> np.ndarray:
-        return self.scaler[col].inverse_transform([values])
+    def inverse_transform(self, values: np.ndarray) -> np.ndarray:
+        return self.scaler.inverse_transform(values)
 
     def max(self, label: str = "all"):
         if label == "train":
@@ -109,27 +108,36 @@ class DataLoader:
         self.print_datainfo("test")
 
     def split_dataset_val(self, val_num):
+        border_start = [
+            self.df_row.index.get_loc(self.train_start_date),
+            self.df_row.index.get_loc(self.val_start_date),
+            self.df_row.index.get_loc(self.test_start_date)
+        ]
+        border_end = [
+            self.df_row.index.get_loc(self.train_end_date) + 1,
+            self.df_row.index.get_loc(self.val_end_date) + 1,
+            self.df_row.index.get_loc(self.test_end_date) + 1
+        ]
+
         # データを分割
-        train_data = self.df_row[(self.df_row.index >= self.train_start_date) & (self.df_row.index <= self.train_end_date)].copy()
-        test_data = self.df_row[(self.df_row.index >= self.test_start_date) & (self.df_row.index <= self.test_end_date)].copy()
-        val_data = self.df_row[(self.df_row.index >= self.val_start_date) & (self.df_row.index <= self.val_end_date)].copy()
+        train_data = self.df_row.values[border_start[0]:border_end[0]]
+        test_data = self.df_row.values[border_start[2]:border_end[2]]
+        val_data = self.df_row.values[border_start[1]:border_end[1]]
 
         # 値を標準化
         if self.scaler_flag:
-            for col in self.target_cols:
-                self.scaler[col].fit(train_data[col].values.reshape(-1, 1))
-                train_data[col] = self.scaler[col].transform(train_data[col].values.reshape(-1, 1))
-                test_data[col] = self.scaler[col].transform(test_data[col].values.reshape(-1, 1))
-                val_data[col] = self.scaler[col].transform(val_data[col].values.reshape(-1, 1))
-
-                for extention_name in self.extention_cols:
-                    train_data[extention_name] = self.scaler[col].transform(train_data[extention_name].values.reshape(-1, 1))
-                    test_data[extention_name] = self.scaler[col].transform(test_data[extention_name].values.reshape(-1, 1))
-                    val_data[extention_name] = self.scaler[col].transform(val_data[extention_name].values.reshape(-1, 1))
+            self.scaler.fit(train_data)
+            train_data = self.scaler.transform(train_data)
+            test_data = self.scaler.transform(test_data)
+            val_data = self.scaler.transform(val_data)
 
         self.train = train_data
         self.val = val_data
         self.test = test_data 
+
+        self.train_date = self.df_row.index[border_start[0]:border_end[0]]
+        self.val_date = self.df_row.index[border_start[1]:border_end[1]]
+        self.test_date = self.df_row.index[border_start[2]:border_end[2]]
 
         self.print_datainfo("train")
         self.print_datainfo("val")

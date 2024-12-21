@@ -7,21 +7,20 @@ import datetime
 from data_provider.data_loader import DataLoader as SelfDataLoader
 
 class CustomDataset(Dataset):
-    def __init__(self, dataset, target_cols, extention_cols, context_length, prediction_length, batch_size):
-        date = dataset.index.values
-
-        self.data = dataset[target_cols].values
+    def __init__(self, dataset, date, target_cols, extention_cols, context_length, prediction_length, batch_size):
+        print(dataset.shape)
+        self.data = dataset
         self.date_str = date.astype(str)
 
         self.time_features = self.time_to_feature(date)
-        self.extention_features = dataset[extention_cols].values
+        #self.extention_features = dataset[extention_cols].values
 
         self.context_length = context_length
         self.prediction_length = prediction_length
         self.batch_size = batch_size
 
     def time_to_feature(self, date):
-        dt = date.astype("M8[ms]").astype(datetime.datetime)
+        dt = date.to_pydatetime()
 
         time_feature = []
 
@@ -50,22 +49,23 @@ class CustomDataset(Dataset):
         target_x = torch.tensor(np.array([self.data[idx+self.context_length:idx+self.context_length+self.prediction_length]])).float().squeeze(0)
 
         time_features = torch.tensor(self.time_features[idx:idx+self.context_length]).float()
-        extention_features = torch.tensor(self.extention_features[idx:idx+self.context_length]).float()
+        #extention_features = torch.tensor(self.extention_features[idx:idx+self.context_length]).float()
+        extention_features = torch.tensor(np.array([self.data[idx:idx+self.context_length]])).float().squeeze(0)
 
         return start_date, input_x, target_x, time_features, extention_features
 
 class CustomDataProvider(SelfDataLoader):
-    def custom_dataset(self, dataset, batch_size):
-        return CustomDataset(dataset, self.target_cols, self.extention_cols, self.context_length, self.prediction_length, batch_size)
+    def custom_dataset(self, dataset, date, batch_size):
+        return CustomDataset(dataset, date, self.target_cols, self.extention_cols, self.context_length, self.prediction_length, batch_size)
 
     def train_dataset(self, batch_size, is_shuffle=True):
-        torch_dataset = self.custom_dataset(self.train, batch_size)
+        torch_dataset = self.custom_dataset(self.train, self.train_date, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
 
     def test_dataset(self, batch_size=1, is_shuffle=False):
-        torch_dataset = self.custom_dataset(self.test, batch_size)
+        torch_dataset = self.custom_dataset(self.test, self.test_date, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
     
     def val_dataset(self, batch_size=1, is_shuffle=False):
-        torch_dataset = self.custom_dataset(self.val, batch_size)
+        torch_dataset = self.custom_dataset(self.val, self.val_date, batch_size)
         return DataLoader(torch_dataset, batch_size=batch_size, shuffle=is_shuffle)
