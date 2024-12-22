@@ -45,7 +45,7 @@ def main(
 ):
 
     is_training = True
-    is_feat_metrics = True
+    is_feat_metrics = False
 
     logger = Logger(exp_name, f"{output_path}/logs")
     logger.log("Start Self Forecasting, Seed: " + str(seed))
@@ -231,21 +231,22 @@ def main(
     print("End Test Forecasting")
     logger.log("End Test Forecasting")
 
-    for c, col in enumerate(target_cols):
-        print("精度評価[{0}]".format(col))
-        print(feat_evaluator[c].mean())
-        logger.log("精度評価[{0}]".format(col))
-        logger.log(evaluator.mean())
+    if is_feat_metrics:
+        for c, col in enumerate(target_cols):
+            print("精度評価[{0}]".format(col))
+            print(feat_evaluator[c].mean())
+            logger.log("精度評価[{0}]".format(col))
+            logger.log(evaluator.mean())
 
-        print("前日価格比較[{0}]".format(col))
-        print("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
-        logger.log("前日価格比較[{0}]".format(col))
-        logger.log("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+            print("前日価格比較[{0}]".format(col))
+            print("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+            logger.log("前日価格比較[{0}]".format(col))
+            logger.log("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
 
-        print("平均価格比較[{0}]".format(col))
-        print("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
-        logger.log("平均価格比較[{0}]".format(col))
-        logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+            print("平均価格比較[{0}]".format(col))
+            print("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+            logger.log("平均価格比較[{0}]".format(col))
+            logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
 
     print("精度評価")
     print(evaluator.mean())
