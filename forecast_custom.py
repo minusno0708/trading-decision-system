@@ -129,12 +129,16 @@ def main(
             feat_today_line_rmse_arr.append(np.array([]))
             feat_ave_line_rmse_arr.append(np.array([]))
 
+
+    pred = []
+    target = []
+    today = []
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
         
         loss_arr = np.append(loss_arr, loss)
 
-        mean = np.array([f.distribution["mean"] for f in forecasts]).T
+        mean = np.array([f.mean for f in forecasts]).T
         quantile_10 = np.array([f.quantile(0.1) for f in forecasts]).T
         quantile_30 = np.array([f.quantile(0.3) for f in forecasts]).T
         quantile_50 = np.array([f.quantile(0.5) for f in forecasts]).T
@@ -154,38 +158,44 @@ def main(
             quantile_70 = data_loader.inverse_transform(quantile_70)
             quantile_90 = data_loader.inverse_transform(quantile_90)
 
-        for c in range(len(target_cols)):
-            metrics = evaluator.evaluate(mean[:, c], target_x[:, c])
+        pred.append(mean)
+        target.append(target_x)
+        today.append(np.tile(input_x[-1], (2, 1)))
 
-            today_line = np.array([input_x[-1, c]] * prediction_length)
-            today_line_rmse = evaluator.rmse(today_line, target_x[:, c])
-            today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
-
-            today_line_mse = evaluator.mse(today_line, target_x[:, c])
-            today_line_mse_arr = np.append(today_line_mse_arr, today_line_mse)
-
-            today_line_mae = evaluator.mae(today_line, target_x[:, c])
-            today_line_mae_arr = np.append(today_line_mae_arr, today_line_mae)
-
-            ave_line = np.array([input_x[:, c].mean()] * prediction_length)
-            ave_line_rmse = evaluator.rmse(ave_line, target_x[:, c])
-            ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
-
-            ave_line_mse = evaluator.mse(ave_line, target_x[:, c])
-            ave_line_mse_arr = np.append(ave_line_mse_arr, ave_line_mse)
-
-            ave_line_mae = evaluator.mae(ave_line, target_x[:, c])
-            ave_line_mae_arr = np.append(ave_line_mae_arr, ave_line_mae)
-
-            if is_feat_metrics:
-                feat_metrics = feat_evaluator[c].evaluate(forecasts[c], target_x[c])
-
-                feat_today_line_rmse_arr[c] = np.append(feat_today_line_rmse_arr[c], today_line_rmse)
-                feat_ave_line_rmse_arr[c] = np.append(feat_ave_line_rmse_arr[c], ave_line_rmse)
-
-        #if i % 1000 == 0:
         if False:
+            for c in range(len(target_cols)):
+                metrics = evaluator.evaluate(mean[:, c], target_x[:, c])
+
+                today_line = np.array([input_x[-1, c]] * prediction_length)
+                today_line_rmse = evaluator.rmse(today_line, target_x[:, c])
+                today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
+
+                today_line_mse = evaluator.mse(today_line, target_x[:, c])
+                today_line_mse_arr = np.append(today_line_mse_arr, today_line_mse)
+
+                today_line_mae = evaluator.mae(today_line, target_x[:, c])
+                today_line_mae_arr = np.append(today_line_mae_arr, today_line_mae)
+
+                ave_line = np.array([input_x[:, c].mean()] * prediction_length)
+                ave_line_rmse = evaluator.rmse(ave_line, target_x[:, c])
+                ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
+
+                ave_line_mse = evaluator.mse(ave_line, target_x[:, c])
+                ave_line_mse_arr = np.append(ave_line_mse_arr, ave_line_mse)
+
+                ave_line_mae = evaluator.mae(ave_line, target_x[:, c])
+                ave_line_mae_arr = np.append(ave_line_mae_arr, ave_line_mae)
+
+                if is_feat_metrics:
+                    feat_metrics = feat_evaluator[c].evaluate(forecasts[c], target_x[c])
+
+                    feat_today_line_rmse_arr[c] = np.append(feat_today_line_rmse_arr[c], today_line_rmse)
+                    feat_ave_line_rmse_arr[c] = np.append(feat_ave_line_rmse_arr[c], ave_line_rmse)
+
+        if i % 1000 == 0:
             print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
+
+        if False:
             logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
 
             print(evaluator.mean())
@@ -254,28 +264,21 @@ def main(
             logger.log("平均価格比較[{0}]".format(col))
             logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
 
-    print("精度評価")
-    print(evaluator.mean())
-    logger.log("精度評価")
-    logger.log(evaluator.mean())
+    pred = np.array(pred)
+    target = np.array(target)
+    today = np.array(today)
 
-    print("前日価格比較")
-    print("rmse:" + str(today_line_rmse_arr.mean()))
-    print("mse:" + str(today_line_mse_arr.mean()))
-    print("mae:" + str(today_line_mae_arr.mean()))
-    logger.log("前日価格比較")
-    logger.log("rmse:" + str(today_line_rmse_arr.mean()))
-    logger.log("mse:" + str(today_line_mse_arr.mean()))
-    logger.log("mae:" + str(today_line_mae_arr.mean()))
+    print(pred.shape)
+    print(target.shape)
+    print(today.shape)
 
-    print("平均価格比較")
-    print("rmse:" + str(ave_line_rmse_arr.mean()))
-    print("mse:" + str(ave_line_mse_arr.mean()))
-    print("mae:" + str(ave_line_mae_arr.mean()))
-    logger.log("平均価格比較")
-    logger.log("rmse:" + str(ave_line_rmse_arr.mean()))
-    logger.log("mse:" + str(ave_line_mse_arr.mean()))
-    logger.log("mae:" + str(ave_line_mae_arr.mean()))
+    metrics = evaluator.evaluate(pred, target)
+    print("総合精度評価")
+    print(metrics)
+
+    metrics = evaluator.evaluate(today, target)
+    print("総合前日価格比較")
+    print(metrics)
     
     print("Test Loss:", np.mean(loss_arr))
     logger.log("Test Loss: " + str(np.mean(loss_arr)))
