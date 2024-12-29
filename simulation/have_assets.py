@@ -153,9 +153,9 @@ def main(
 
         break
 
-    assets.trade("dollar", "btc", rate.buy("btc"), assets.dollar.possession * 0.5)
+    assets.trade(base_asset, target_assets[0], rate.buy(target_assets[0]), assets.dollar.possession * 0.5)
 
-    print(f"start: dollar {assets.dollar.possession}, {target_assets[0]} {assets.btc.possession}")
+    print(f"start: {base_asset} {assets.dollar.possession}, {target_assets[0]} {assets.btc.possession}")
 
     strutegy = Strategy(decision_method)
 
@@ -193,9 +193,9 @@ def main(
         action = strutegy.decide_action(history_values, forecast_values, future_values)
 
         if action == "buy":
-            assets.trade("dollar", "btc", rate.buy("btc"), assets.dollar.possession * trade_rate)
+            assets.trade(base_asset, target_assets[0], rate.buy(target_assets[0]), assets.dollar.possession * trade_rate)
         elif action == "sell":
-            assets.trade("btc", "dollar", rate.sell("btc"), assets.btc.possession * trade_rate)
+            assets.trade(target_assets[0], base_asset, rate.sell(target_assets[0]), assets.btc.possession * trade_rate)
         else:
             pass
 
@@ -221,14 +221,14 @@ def main(
         total_log.append(current_rate, assets.dollar.possession + assets.btc.possession * rate.rates[0])
         
 
-    rate_log.plot(f"{target_assets[0]}-rate", "btc/USD Rate")
-    dollar_log.plot(f"{target_assets[0]}-dollar", "dollar Possession")
-    crypto_log.plot(f"{target_assets[0]}-{target_assets[0]}", "btc Possession")
+    rate_log.plot(f"{target_assets[0]}-rate", f"{target_assets[0]}/USD Rate")
+    dollar_log.plot(f"{target_assets[0]}-{base_asset}", f"{base_asset} Possession")
+    crypto_log.plot(f"{target_assets[0]}-{target_assets[0]}", f"{target_assets[0]} Possession")
     total_log.plot(f"{target_assets[0]}-total", "Total Possession")
 
-    assets.trade(f"{target_assets[0]}", "dollar", rate.sell(f"{target_assets[0]}"), assets.btc.possession)
+    assets.trade(f"{target_assets[0]}", base_asset, rate.sell(f"{target_assets[0]}"), assets.btc.possession)
 
-    print(f"result: dollar {assets.dollar.possession}, {target_assets[0]} {assets.btc.possession}")
+    print(f"result: {base_asset} {assets.dollar.possession}, {target_assets[0]} {assets.btc.possession}")
 
     print(f"actions_result: {actions_result}")
 
