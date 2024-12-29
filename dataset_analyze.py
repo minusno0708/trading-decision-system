@@ -13,10 +13,14 @@ import matplotlib.dates as mdates
 
 target = "jpy"
 
-test_start_date = datetime.datetime.strptime("2023-01-02", "%Y-%m-%d")
+test_start_date = datetime.datetime.strptime("2023-01-01", "%Y-%m-%d")
 train_data_length = 2000
 val_data_length = 180
 test_data_length = 360
+
+train_start_date = datetime.datetime.strptime("2010-01-01", "%Y-%m-%d")
+train_end_date = datetime.datetime.strptime("2022-12-31", "%Y-%m-%d")
+test_end_date = datetime.datetime.strptime("2023-12-31", "%Y-%m-%d")
 
 if target == "btc":
     target_cols = ["close"]
@@ -54,7 +58,8 @@ elif target == "wth":
         scaler_flag=False
     )
 
-data_loader.update_date_by_index(test_start_date, train_data_length, test_data_length, val_data_length)
+#data_loader.update_date_by_index(test_start_date, train_data_length, test_data_length, val_data_length)
+data_loader.update_date()
 
 data_array = np.array([])
 
