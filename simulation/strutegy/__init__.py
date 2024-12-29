@@ -44,3 +44,30 @@ def all_false(history_values: list, next_price: float) -> str:
         return "buy"
     else:
         return "sell"
+
+class Strategy:
+    def __init__(self, decision_method: str):
+        self.decision_method = decision_method
+
+    def decide_action(self, history_values: list, forecast_values: list, future_values: list = None) -> str:
+        if self.decision_method == "diff_next_mean":
+            action = diff_next_mean(history_values, forecast_values)
+        elif self.decision_method == "random":
+            action = random_decision()
+        elif self.decision_method == "all_win":
+            action = all_true(history_values, future_values[0])
+        elif self.decision_method == "all_lose":
+            action = all_false(history_values, future_values[0])
+        elif self.decision_method == "all_buy":
+            action = "buy"
+        elif self.decision_method == "all_sell":
+            action = "sell"
+        elif self.decision_method == "cross_action":
+            if not "action" in locals():
+                action = "sell"
+            elif action == "buy":
+                action = "sell"
+            elif action == "sell":
+                action = "buy"
+
+        return action

@@ -19,19 +19,13 @@ from data_provider.custom_data_provider import CustomDataProvider
 
 from model.custom import Model
 
-from strutegy import *
+from simulation.strutegy import *
 
 input_length = 30
 output_length = 1
 
 trade_rate = 0.1
 start_dollar = 1000
-
-seed = 0
-
-random.seed(seed)
-np.random.seed(seed)
-torch.manual_seed(seed)
 
 decision_method = "diff_next_mean"
 
@@ -180,7 +174,31 @@ def main(
     crypto_log = Log()
     total_log = Log()
 
+    for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
+        if is_pre_scaling:
+            input_x_inverse = []
+
+            for c, col in enumerate(target_cols):
+                input_x_inverse.append(data_loader.inverse_transform(input_x[:,:,c].detach().numpy().squeeze(0), col).squeeze(0))
+
+            input_x = np.array(input_x_inverse)
+        else:
+            input_x = input_x.squeeze(0).permute(1, 0).detach().numpy()
+
+        current_rate = input_x[0][-1]
+
+        # 仮想通貨の価格を更新
+        rate.update([
+            current_rate,
+        ])
+
+        break
+
+    assets.trade("dollar", "btc", rate.buy("btc"), assets.dollar.possession * 0.5)
+
     print(f"start: dollar {assets.dollar.possession}, {target_assets[0]} {assets.btc.possession}")
+
+    strutegy = Strategy(decision_method)
 
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
         # 価格を予測
@@ -213,25 +231,7 @@ def main(
         future_values = target_x[0]
         forecast_values = forecasts[0].mean
 
-        if decision_method == "diff_next_mean":
-            action = diff_next_mean(history_values, forecast_values)
-        elif decision_method == "random":
-            action = random_decision()
-        elif decision_method == "all_win":
-            action = all_true(history_values, future_values[0])
-        elif decision_method == "all_lose":
-            action = all_false(history_values, future_values[0])
-        elif decision_method == "all_buy":
-            action = "buy"
-        elif decision_method == "all_sell":
-            action = "sell"
-        elif decision_method == "cross_action":
-            if not "action" in locals():
-                action = "sell"
-            elif action == "buy":
-                action = "sell"
-            elif action == "sell":
-                action = "buy"
+        action = strutegy.decide_action(history_values, forecast_values, future_values)
 
         if action == "buy":
             assets.trade("dollar", "btc", rate.buy("btc"), assets.dollar.possession * trade_rate)
