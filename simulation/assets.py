@@ -13,8 +13,12 @@ class Asset:
 
 class Assets:
     def __init__(self, assets):
+        self._assets = {}
         for asset in assets:
-            setattr(self, asset, Asset(asset))
+            self.__dict__[asset] = Asset(asset)
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
 
     def get(self, asset, amount):
         self.__dict__[asset].buy(amount)
