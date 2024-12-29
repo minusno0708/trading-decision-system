@@ -14,6 +14,8 @@ from model.custom import Model
 from evaluator import Evaluator
 from logger import Logger
 
+from args_parser import parse_args
+
 import matplotlib.pyplot as plt
 
 import os
@@ -110,9 +112,6 @@ def main(
 
     evaluator = Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9])
 
-    today_line_rmse_arr = np.array([])
-    ave_line_rmse_arr = np.array([])
-
     today_line_mse_arr = np.array([])
     ave_line_mse_arr = np.array([])
 
@@ -153,8 +152,6 @@ def main(
             metrics = evaluator.evaluate(forecasts[c], target_x[c])
 
             today_line = np.array([input_x[c, -1]] * prediction_length)
-            today_line_rmse = evaluator.rmse(today_line, target_x[c])
-            today_line_rmse_arr = np.append(today_line_rmse_arr, today_line_rmse)
 
             today_line_mse = evaluator.mse(today_line, target_x[c])
             today_line_mse_arr = np.append(today_line_mse_arr, today_line_mse)
@@ -163,8 +160,6 @@ def main(
             today_line_mae_arr = np.append(today_line_mae_arr, today_line_mae)
 
             ave_line = np.array([input_x[c].mean()] * prediction_length)
-            ave_line_rmse = evaluator.rmse(ave_line, target_x[c])
-            ave_line_rmse_arr = np.append(ave_line_rmse_arr, ave_line_rmse)
 
             ave_line_mse = evaluator.mse(ave_line, target_x[c])
             ave_line_mse_arr = np.append(ave_line_mse_arr, ave_line_mse)
@@ -178,7 +173,7 @@ def main(
                 feat_today_line_rmse_arr[c] = np.append(feat_today_line_rmse_arr[c], today_line_rmse)
                 feat_ave_line_rmse_arr[c] = np.append(feat_ave_line_rmse_arr[c], ave_line_rmse)
 
-        if i % 1000 == 0:
+        if i % 100 == 0:
             print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
             logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
 
@@ -254,21 +249,21 @@ def main(
     logger.log(evaluator.mean())
 
     print("前日価格比較")
-    print("rmse:" + str(today_line_rmse_arr.mean()))
     print("mse:" + str(today_line_mse_arr.mean()))
+    print("rmse:" + str(np.sqrt(today_line_mse_arr.mean())))
     print("mae:" + str(today_line_mae_arr.mean()))
     logger.log("前日価格比較")
-    logger.log("rmse:" + str(today_line_rmse_arr.mean()))
     logger.log("mse:" + str(today_line_mse_arr.mean()))
+    logger.log("rmse:" + str(np.sqrt(today_line_mse_arr.mean())))
     logger.log("mae:" + str(today_line_mae_arr.mean()))
 
     print("平均価格比較")
-    print("rmse:" + str(ave_line_rmse_arr.mean()))
     print("mse:" + str(ave_line_mse_arr.mean()))
+    print("rmse:" + str(np.sqrt(ave_line_mse_arr.mean())))
     print("mae:" + str(ave_line_mae_arr.mean()))
     logger.log("平均価格比較")
-    logger.log("rmse:" + str(ave_line_rmse_arr.mean()))
     logger.log("mse:" + str(ave_line_mse_arr.mean()))
+    logger.log("rmse:" + str(np.sqrt(ave_line_mse_arr.mean())))
     logger.log("mae:" + str(ave_line_mae_arr.mean()))
     
     print("Test Loss:", np.mean(loss_arr))
@@ -290,55 +285,9 @@ def str2datetime(v):
         return datetime.strptime(v, "%Y-%m-%d")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--output_path", type=str, default="output/forecast")
-    parser.add_argument("--exp_name", type=str, default="exp_default")
-
-    parser.add_argument("--data_path", type=str, default="dataset/btc.csv")
-    parser.add_argument("--index_col", type=str, default="timeOpen")
-    parser.add_argument("--target_cols", type=str, default=["close"])
-
-    parser.add_argument("--train_start_date", type=str2datetime, default=None)
-    parser.add_argument("--train_end_date", type=str2datetime, default=None)
-    parser.add_argument("--test_start_date", type=str2datetime, default=None)
-    parser.add_argument("--test_end_date", type=str2datetime, default=None)
-    
-    parser.add_argument("--train_data_length", type=int, default=60)
-    parser.add_argument("--test_data_length", type=int, default=30)
-    parser.add_argument("--val_data_length", type=int, default=0)
-    parser.add_argument("--split_type", type=str, default="datetime")
-
-    parser.add_argument("--prediction_length", type=int, default=30)
-    parser.add_argument("--context_length", type=int, default=30)
-    parser.add_argument("--epochs", type=int, default=100)
-
-    parser.add_argument("--num_batches", type=int, default=64)
-    parser.add_argument("--num_parallel_samples", type=int, default=1000)
-
-    parser.add_argument("--is_pre_scaling", type=int2bool, default=True)
-
-    parser.add_argument("--is_model_scaling", type=int2bool, default=False)
-    parser.add_argument("--add_time_features", type=int2bool, default=False)
-    parser.add_argument("--add_extention_features", type=int2bool, default=False)
-
-    args = parser.parse_args()
+    args = parse_args()
 
     seed = args.seed
-
-    if not os.path.exists(f"{args.output_path}/images/{args.exp_name}"):
-        os.makedirs(f"{args.output_path}/images/{args.exp_name}")
-
-    if not os.path.exists(f"{args.output_path}/logs"):
-        os.makedirs(f"{args.output_path}/logs")
-
-    if args.split_type == "datetime":
-        if (args.train_end_date - args.train_start_date).days < args.context_length + args.prediction_length:
-            raise ValueError(f"train data must be longer than {args.context_length + args.prediction_length}: {args.train_end_date - args.train_start_date}")
-
-        if (args.test_end_date - args.test_start_date).days < args.prediction_length:
-            raise ValueError(f"test data must be longer than {args.prediction_length}: {args.test_end_date - args.test_start_date}")
 
     random.seed(seed)
     np.random.seed(seed)
