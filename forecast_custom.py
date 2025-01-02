@@ -47,7 +47,7 @@ def main(
 ):
 
     is_training = True
-    is_feat_metrics = False
+    is_feat_metrics = True
 
     logger = Logger(exp_name, f"{output_path}/logs")
     logger.log("Start Self Forecasting, Seed: " + str(seed))
@@ -120,13 +120,13 @@ def main(
 
     if is_feat_metrics:
         feat_evaluator = []
-        feat_today_line_rmse_arr = []
-        feat_ave_line_rmse_arr = []
+        feat_today_line_mse_arr = []
+        feat_ave_line_mse_arr = []
         for c in range(len(target_cols)):
             feat_evaluator.append(Evaluator(quantiles=[0.1, 0.3, 0.5, 0.7, 0.9]))
 
-            feat_today_line_rmse_arr.append(np.array([]))
-            feat_ave_line_rmse_arr.append(np.array([]))
+            feat_today_line_mse_arr.append(np.array([]))
+            feat_ave_line_mse_arr.append(np.array([]))
 
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
         forecasts, loss = model.make_evaluation_predictions(input_x, target_x, time_features, extention_features)
@@ -170,10 +170,10 @@ def main(
             if is_feat_metrics:
                 feat_metrics = feat_evaluator[c].evaluate(forecasts[c], target_x[c])
 
-                feat_today_line_rmse_arr[c] = np.append(feat_today_line_rmse_arr[c], today_line_rmse)
-                feat_ave_line_rmse_arr[c] = np.append(feat_ave_line_rmse_arr[c], ave_line_rmse)
+                feat_today_line_mse_arr[c] = np.append(feat_today_line_mse_arr[c], today_line_mse)
+                feat_ave_line_mse_arr[c] = np.append(feat_ave_line_mse_arr[c], ave_line_mse)
 
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
             logger.log(f"forecasting {i}th data, date: {start_date}, loss: {loss}")
 
@@ -234,14 +234,14 @@ def main(
             logger.log(evaluator.mean())
 
             print("前日価格比較[{0}]".format(col))
-            print("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+            print("mse:" + str(feat_today_line_mse_arr[c].mean()))
             logger.log("前日価格比較[{0}]".format(col))
-            logger.log("rmse:" + str(feat_today_line_rmse_arr[c].mean()))
+            logger.log("mse:" + str(feat_today_line_mse_arr[c].mean()))
 
             print("平均価格比較[{0}]".format(col))
-            print("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+            print("mse:" + str(feat_ave_line_mse_arr[c].mean()))
             logger.log("平均価格比較[{0}]".format(col))
-            logger.log("rmse:" + str(feat_ave_line_rmse_arr[c].mean()))
+            logger.log("mse:" + str(feat_ave_line_mse_arr[c].mean()))
 
     print("精度評価")
     print(evaluator.mean())
