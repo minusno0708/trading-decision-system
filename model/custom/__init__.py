@@ -12,9 +12,14 @@ from model.custom.loss_weight import LossWeight
 
 from torchinfo import summary
 
+import matplotlib.pyplot as plt
+
+import os
+
 class Model:
     def __init__(
             self,
+            model_name: str,
             context_length: int,
             prediction_length: int,
             freq: str = "D",
@@ -25,11 +30,13 @@ class Model:
             add_time_features: bool = True,
             add_extention_features: bool = True
         ):
+        self.model_name = model_name
+
         self.is_scaling = is_scaling
         self.feature_second = False
 
         self.add_time_features = add_time_features
-        self.num_time_features = 5
+        self.num_time_features = 3
 
         self.add_extention_features = add_extention_features
         self.num_extention_features = 3
@@ -78,7 +85,7 @@ class Model:
         #self.scaler = Scaler("mean", self.feature_second)
         self.scaler = Scaler("standard", self.feature_second)
 
-        self.path = "checkpoint.pth"
+        self.path = f"checkpoints/{self.model_name}/"
 
     def permute_dim(self, x):
         # 元の次元 [batch_size, feature_size, time_step]
@@ -134,10 +141,19 @@ class Model:
         if train_target is not None:
             self.loss_weight = LossWeight(self.permute_dim(train_target).to(self.device))
 
+        val_mean_diff = []
+        val_var = []
+
+        train_mean_diff = []
+        train_var = []
+
         for epoch in range(self.epochs):
             self.model.train()
 
             train_loss_per_epoch = np.array([])
+
+            train_mean_diff_per_epoch = []
+            train_var_per_epoch = []
 
             for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(dataset):
                 optimizer.zero_grad()
@@ -150,11 +166,17 @@ class Model:
 
                 loss, mean, var = self.loss_compute(mean, target_x, var, scale)
 
+                train_mean_diff_per_epoch.append(((mean - target_x)**2).mean().item())
+                train_var_per_epoch.append(var.mean().item())
+
                 train_loss_per_epoch = np.append(train_loss_per_epoch, loss.item())
                 
                 # モデルの更新
                 loss.backward()
                 optimizer.step()
+
+            train_mean_diff.append(np.mean(train_mean_diff_per_epoch))
+            train_var.append(np.mean(train_var_per_epoch))
             
             loss_mean = np.mean(train_loss_per_epoch)
             train_loss.append(loss_mean)
@@ -165,6 +187,8 @@ class Model:
 
                 val_loss_per_epoch = np.array([])
                 with torch.no_grad():
+                    val_mean_diff_per_epoch = []
+                    val_var_per_epoch = []
                     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(val_dataset):
                         batch_size = input_x.shape[0]
                         hidden = self.model.init_hidden(batch_size)
@@ -176,10 +200,16 @@ class Model:
 
                         loss, mean, var = self.loss_compute(mean, target_x, var, scale)
 
+                        val_mean_diff_per_epoch.append(((mean - target_x)**2).mean().item())
+                        val_var_per_epoch.append(var.mean().item())
+
                         val_loss_per_epoch = np.append(val_loss_per_epoch, loss.item())
             
                 loss_mean = np.mean(val_loss_per_epoch)
                 val_loss.append(loss_mean)
+
+                val_mean_diff.append(np.mean(val_mean_diff_per_epoch))
+                val_var.append(np.mean(val_var_per_epoch))
 
                 if loss_mean < minimal_val_loss["loss"]:
                     minimal_val_loss["loss"] = loss_mean
@@ -201,6 +231,20 @@ class Model:
             print(f"Load minimal model, epoch: {minimal_val_loss['epoch']}, loss: {minimal_val_loss['loss']}")
         else:
             self.model.eval()
+
+        fig, ax = plt.subplots()
+        ax.plot(train_mean_diff, label="train")
+        ax.plot(val_mean_diff, label="val")
+        plt.legend()
+        plt.savefig(f"tmp/{self.model_name}_mean_diff.png")
+        fig.clf()
+
+        fig, ax = plt.subplots()
+        ax.plot(train_var, label="train")
+        ax.plot(val_var, label="val")
+        plt.legend()
+        plt.savefig(f"tmp/{self.model_name}_var.png")
+        fig.clf()
 
         return train_loss, val_loss, minimal_val_loss
 
@@ -243,10 +287,13 @@ class Model:
         return output, loss
 
     def save(self):
-        torch.save(self.model.state_dict(), self.path)
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
+
+        torch.save(self.model.state_dict(), self.path + "checkpoint.pth")
 
     def load(self):
-        self.model.load_state_dict(torch.load(self.path))
+        self.model.load_state_dict(torch.load(self.path + "checkpoint.pth"))
         self.model.eval()
         self.model.to(self.device)
     
