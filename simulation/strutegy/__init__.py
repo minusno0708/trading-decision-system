@@ -49,8 +49,8 @@ class Strategy:
     def __init__(self, decision_method: str):
         self.decision_method = decision_method
 
-    def decide_action(self, history_values: list, forecast_values: list, future_values: list = None) -> str:
-        if self.decision_method == "diff_next_mean":
+    def decide_action(self, history_values: list, forecast_values: list, future_values: list, quantile_lower: list, quantile_upper: list) -> str:
+        if self.decision_method == "mean":
             action = diff_next_mean(history_values, forecast_values)
         elif self.decision_method == "random":
             action = random_decision()
@@ -62,12 +62,12 @@ class Strategy:
             action = "buy"
         elif self.decision_method == "all_sell":
             action = "sell"
-        elif self.decision_method == "cross_action":
-            if not "action" in locals():
-                action = "sell"
-            elif action == "buy":
-                action = "sell"
-            elif action == "sell":
+        elif self.decision_method == "quantile":
+            if history_values[-1] < quantile_lower:
                 action = "buy"
+            elif history_values[-1] > quantile_upper:
+                action = "sell"
+            else:
+                action = "hold"
 
         return action

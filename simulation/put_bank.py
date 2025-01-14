@@ -30,14 +30,14 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 mx.random.seed(seed)
 
-decision_method = "diff_next_mean"
+decision_method = "quantile"
+#decision_method = "mean"
+#decision_method = "all_win"
+#decision_method = "random"
 
 train_flag = False
 
 output_dir = "output"
-
-input_length = 30
-output_length = 30
 
 dollor_sell_amount = 100
 btc_sell_amount = 0
@@ -122,6 +122,12 @@ def main(
         "buy_false": 0,
         "sell_true": 0,
         "sell_false": 0,
+        "hold": 0
+    }
+
+    pl_result = {
+        "profit": [],
+        "loss": []
     }
 
     base_asset = "dollar"
@@ -155,6 +161,7 @@ def main(
         data_loader.update_date_by_index(test_start_date, train_data_length, test_data_length, val_data_length)
 
     model = Model(
+        model_name = exp_name,
         context_length=context_length,
         prediction_length=prediction_length,
         freq="D",
@@ -172,6 +179,8 @@ def main(
         model.load()
 
     strutegy = Strategy(decision_method)
+
+    pre_dollor = bank.account
 
     for i, (start_date, input_x, target_x, time_features, extention_features) in enumerate(data_loader.test_dataset(batch_size=1, is_shuffle=False)):
         # 価格を予測
@@ -202,9 +211,12 @@ def main(
         # 取引開始
         history_values = input_x[0]
         future_values = target_x[0]
-        forecast_values = forecasts[0].mean
+        forecast_values = forecasts[0].median
 
-        action = strutegy.decide_action(history_values, forecast_values, future_values)
+        quantile_lower = forecasts[0].quantile(0.1)
+        quantile_upper = forecasts[0].quantile(0.9)
+
+        action = strutegy.decide_action(history_values, forecast_values, future_values, quantile_lower, quantile_upper)
 
         current_date = history_values[-1]
 
@@ -216,6 +228,13 @@ def main(
         btc_shorted = 0
 
         log.append(current_date, bank.account)
+
+        if bank.account > pre_dollor:
+            pl_result["profit"].append(bank.account - pre_dollor)
+        else:
+            pl_result["loss"].append(-(bank.account - pre_dollor))
+
+        pre_dollor = bank.account
 
         # 取引
         if action == "buy":
@@ -245,6 +264,8 @@ def main(
                 actions_result["sell_false"] += 1
             else:
                 print("Error")
+        else:
+            actions_result["hold"] += 1
 
     bank.put(btc_hold * rate.sell("btc"))
     bank.out(btc_shorted * rate.sell("btc"))
@@ -258,6 +279,23 @@ def main(
     print(f"action: {action}, seed: {seed}")
     print("bank: ", bank.account)
     print("actions_result: ", actions_result)
+
+    action_sum = actions_result["buy_true"] + actions_result["buy_false"] + actions_result["sell_true"] + actions_result["sell_false"] + actions_result["hold"]
+
+    print(f"action result rate: buy_true: {actions_result['buy_true'] / action_sum}, buy_false: {actions_result['buy_false'] / action_sum}, sell_true: {actions_result['sell_true'] / action_sum}, sell_false: {actions_result['sell_false'] / action_sum}, hold: {actions_result['hold'] / action_sum}")
+
+    print("true rate: ", (actions_result["buy_true"] + actions_result["sell_true"]) / (actions_result["buy_true"] + actions_result["buy_false"] + actions_result["sell_true"] + actions_result["sell_false"]))
+    print("active rate: ", (actions_result["buy_true"] + actions_result["buy_false"] + actions_result["sell_true"] + actions_result["sell_false"]) / action_sum)
+
+    pl_result["profit"] = np.array(pl_result["profit"])
+    pl_result["loss"] = np.array(pl_result["loss"])
+
+    print("profit sum: ", pl_result["profit"].sum())
+    print("loss sum: ", pl_result["loss"].sum())
+    print("profit - loss: ", pl_result["profit"].sum() - pl_result["loss"].sum())
+
+    print("profit mean: ", pl_result["profit"].mean())
+    print("loss mean: ", pl_result["loss"].mean())
 
 if __name__ == '__main__':
     print("desicion method: ", decision_method)
